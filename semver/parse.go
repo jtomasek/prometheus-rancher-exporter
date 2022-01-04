@@ -1,0 +1,25 @@
+package semver
+
+import (
+	"regexp"
+	"strconv"
+)
+
+const semverregex = "^(?P<major>0|[1-9]\\d*)\\.(?P<minor>0|[1-9]\\d*)\\.(?P<patch>0|[1-9]\\d*)(?:-(?P<prerelease>(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+(?P<buildmetadata>[0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"
+
+func Parse(semver string) (map[string]int64, error) {
+	regex := regexp.MustCompile(semverregex)
+	match := regex.FindStringSubmatch(semver)
+	result := make(map[string]int64)
+	for i, name := range regex.SubexpNames() {
+		if i != 0 && name != "" {
+			v, err := strconv.ParseInt(match[i], 10, 64)
+			if err != nil {
+				return nil, err
+			}
+			result[name] = v
+		}
+	}
+
+	return result, nil
+}
