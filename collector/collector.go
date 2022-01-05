@@ -40,8 +40,9 @@ func new() metrics {
 	return m
 }
 
-func Collect(client rancher.Client) {
+func Collect() {
 	m := new()
+	client := rancher.Client{}
 
 	ticker := time.NewTicker(30 * time.Second)
 
