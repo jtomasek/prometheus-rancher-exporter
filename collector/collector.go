@@ -44,7 +44,7 @@ func Collect() {
 	m := new()
 	client := rancher.Client{}
 
-	ticker := time.NewTicker(30 * time.Second)
+	ticker := time.NewTicker(1 * time.Second)
 
 	for range ticker.C {
 		log.Info("updating metrics")
@@ -58,4 +58,5 @@ func Collect() {
 		m.rancherMinorVersion.Set(float64(vers["minor"]))
 		m.rancherPatchVersion.Set(float64(vers["patch"]))
 	}
+
 }
