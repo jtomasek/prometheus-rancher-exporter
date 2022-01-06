@@ -1,6 +1,7 @@
 package semver
 
 import (
+	log "github.com/sirupsen/logrus"
 	"regexp"
 	"strconv"
 )
@@ -11,6 +12,8 @@ func Parse(semver string) (map[string]int64, error) {
 	regex := regexp.MustCompile(semverregex)
 	match := regex.FindStringSubmatch(semver)
 	result := make(map[string]int64)
+	log.Info("semver", semver)
+
 	for i, name := range regex.SubexpNames() {
 		if i != 0 && name != "" {
 			v, err := strconv.ParseInt(match[i], 10, 64)
