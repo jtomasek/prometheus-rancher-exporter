@@ -3,7 +3,6 @@ package rancher
 import (
 	"context"
 	"github.com/ebauman/prometheus-rancher-exporter/semver"
-	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -56,15 +55,7 @@ func (r Client) GetRancherVersion() (map[string]int64, error) {
 
 	version, _, _ := unstructured.NestedString(res.UnstructuredContent(), "value")
 
-	log.Info("version: ", version)
-
-	// major, minor, patch, prerelease, buildmetadata
-
-	log.Info("Parsing the following: ", TrimVersionChar(version))
-
 	result, err := semver.Parse(TrimVersionChar(version))
-
-	log.Info("Resukt: ", result)
 
 	if err != nil {
 		return nil, err
