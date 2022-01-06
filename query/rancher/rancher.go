@@ -54,13 +54,9 @@ func (r Client) GetRancherVersion() (map[string]int64, error) {
 		return nil, err
 	}
 
-	log.Info("result: ", res)
-
-	log.Info("unstructured content ", res.UnstructuredContent())
-
 	version, _, _ := unstructured.NestedString(res.UnstructuredContent(), "value")
 
-	log.Info("version", version)
+	log.Info("version: ", version)
 
 	// major, minor, patch, prerelease, buildmetadata
 	result, err := semver.Parse("v2.6.3")
