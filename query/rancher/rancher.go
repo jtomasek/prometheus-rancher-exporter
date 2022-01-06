@@ -15,23 +15,13 @@ var (
 )
 
 type Client struct {
-	client dynamic.Interface
+	Client dynamic.Interface
+	Config *rest.Config
 }
 
 func (r Client) GetRancherVersion() (map[string]int64, error) {
 
-	config, err := rest.InClusterConfig()
-
-	if err != nil {
-		return nil, err
-	}
-	r.client, err = dynamic.NewForConfig(config)
-
-	if err != nil {
-		return nil, err
-	}
-
-	res, err := r.client.Resource(settingGVR).Get(context.Background(), "server-version", v1.GetOptions{})
+	res, err := r.Client.Resource(settingGVR).Get(context.Background(), "server-version", v1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
