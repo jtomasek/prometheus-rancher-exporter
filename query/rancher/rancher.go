@@ -59,10 +59,20 @@ func (r Client) GetRancherVersion() (map[string]int64, error) {
 	log.Info("version: ", version)
 
 	// major, minor, patch, prerelease, buildmetadata
-	result, err := semver.Parse("v2.6.3")
+	result, err := semver.Parse(TrimVersionChar(version))
 	if err != nil {
 		return nil, err
 	}
 
 	return result, nil
+}
+
+// Version returned from CRD is in the format of "v.N.N.N", trim the leading "v"
+func TrimVersionChar(version string) string {
+	for i := range version {
+		if i > 0 {
+			return version[i:]
+		}
+	}
+	return version[:0]
 }
