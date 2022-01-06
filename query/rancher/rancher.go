@@ -18,23 +18,6 @@ type Client struct {
 	client dynamic.Interface
 }
 
-/*
-func (r Client) NewClient() (dynamic.Interface, error) {
-	config, err := rest.InClusterConfig()
-
-	if err != nil {
-		return nil, err
-	}
-	r.client, err = dynamic.NewForConfig(config)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return r.client, err
-}
-*/
-
 func (r Client) GetRancherVersion() (map[string]int64, error) {
 
 	config, err := rest.InClusterConfig()
