@@ -59,6 +59,9 @@ func (r Client) GetRancherVersion() (map[string]int64, error) {
 	log.Info("version: ", version)
 
 	// major, minor, patch, prerelease, buildmetadata
+
+	log.Info("Parsing the following: ", TrimVersionChar(version))
+
 	result, err := semver.Parse(TrimVersionChar(version))
 	if err != nil {
 		return nil, err
