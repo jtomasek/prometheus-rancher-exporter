@@ -63,6 +63,9 @@ func (r Client) GetRancherVersion() (map[string]int64, error) {
 	log.Info("Parsing the following: ", TrimVersionChar(version))
 
 	result, err := semver.Parse(TrimVersionChar(version))
+
+	log.Info("Resukt: ", result)
+
 	if err != nil {
 		return nil, err
 	}
