@@ -3,6 +3,7 @@ package rancher
 import (
 	"context"
 	"github.com/ebauman/prometheus-rancher-exporter/semver"
+	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -11,7 +12,8 @@ import (
 )
 
 var (
-	settingGVR = schema.GroupVersionResource{Group: "management.cattle.io", Version: "v3", Resource: "settings"}
+	settingGVR                 = schema.GroupVersionResource{Group: "management.cattle.io", Version: "v3", Resource: "settings"}
+	settingGVRNumberOfClusters = schema.GroupVersionResource{Group: "management.cattle.io", Version: "v3", Resource: "clusters"}
 )
 
 type Client struct {
@@ -35,6 +37,17 @@ func (r Client) GetRancherVersion() (map[string]int64, error) {
 	}
 
 	return result, nil
+}
+
+func (r Client) GetNumberOfManagedClusters() (int, error) {
+
+	res, err := r.Client.Resource(settingGVRNumberOfClusters).Get(context.Background(), "", v1.GetOptions{})
+	if err != nil {
+		return 0, err
+	}
+	log.Info("Number of Clusters", res)
+
+	return 1, nil
 }
 
 // Version returned from CRD is in the format of "v.N.N.N", trim the leading "v"
