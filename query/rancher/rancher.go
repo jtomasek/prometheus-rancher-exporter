@@ -45,7 +45,10 @@ func (r Client) GetNumberOfManagedClusters() (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	log.Info("Number of Clusters", res)
+
+	number, _, _ := unstructured.NestedStringMap(res.UnstructuredContent())
+
+	log.Info("Number of Clusters", len(number))
 
 	return 1, nil
 }
