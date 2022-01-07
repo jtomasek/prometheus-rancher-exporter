@@ -3,7 +3,6 @@ package rancher
 import (
 	"context"
 	"github.com/ebauman/prometheus-rancher-exporter/semver"
-	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -48,9 +47,7 @@ func (r Client) GetNumberOfManagedClusters() (int, error) {
 
 	number, _, _ := unstructured.NestedStringMap(res.UnstructuredContent())
 
-	log.Info("Number of Clusters", len(number))
-
-	return 1, nil
+	return len(number), nil
 }
 
 // Version returned from CRD is in the format of "v.N.N.N", trim the leading "v"
