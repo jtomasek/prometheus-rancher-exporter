@@ -11,7 +11,8 @@ import (
 )
 
 var (
-	settingGVR = schema.GroupVersionResource{Group: "management.cattle.io", Version: "v3", Resource: "settings"}
+	settingGVR                 = schema.GroupVersionResource{Group: "management.cattle.io", Version: "v3", Resource: "settings"}
+	settingGVRNumberOfClusters = schema.GroupVersionResource{Group: "management.cattle.io", Version: "v3", Resource: "clusters"}
 )
 
 type Client struct {
@@ -37,7 +38,17 @@ func (r Client) GetRancherVersion() (map[string]int64, error) {
 	return result, nil
 }
 
-// Version returned from CRD is in the format of "v.N.N.N", trim the leading "v"
+func (r Client) GetNumberOfManagedClusters() (int, error) {
+
+	res, err := r.Client.Resource(settingGVRNumberOfClusters).List(context.Background(), v1.ListOptions{})
+	if err != nil {
+		return 0, err
+	}
+
+	return len(res.Items), nil
+}
+
+// Version returned from CRD is in the format of "vN.N.N", trim the leading "v"
 func TrimVersionChar(version string) string {
 	for i := range version {
 		if i > 0 {
