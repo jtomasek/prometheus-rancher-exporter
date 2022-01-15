@@ -15,11 +15,6 @@ import (
 
 func main() {
 
-	currentUser, err := user.Current()
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-
 	// Build Rancher Client
 	log.Info("Building Rancher Client")
 
@@ -27,6 +22,12 @@ func main() {
 	//config, err := rest.InClusterConfig()david
 
 	// Use this for out of cluster config
+
+	currentUser, err := user.Current()
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
 	kubeconfig := flag.String("kubeconfig", fmt.Sprintf("/home/%s/.kube/config", currentUser.Username), "absolute path to the kubeconfig file")
 	flag.Parse()
 	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)

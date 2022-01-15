@@ -48,6 +48,24 @@ func (r Client) GetNumberOfManagedClusters() (int, error) {
 	return len(res.Items), nil
 }
 
+func (r Client) GetK8sDistributions() (map[string]int, error) {
+
+	distributions := make(map[string]int)
+
+	res, err := r.Client.Resource(settingGVRNumberOfClusters).List(context.Background(), v1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	for _, v := range res.Items {
+		labels := v.GetLabels()
+		distribution := labels["provider.cattle.io"]
+		distributions[distribution] += 1
+	}
+
+	return distributions, nil
+}
+
 // Version returned from CRD is in the format of "vN.N.N", trim the leading "v"
 func TrimVersionChar(version string) string {
 	for i := range version {
