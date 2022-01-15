@@ -49,7 +49,7 @@ func new() metrics {
 
 func Collect(client rancher.Client) {
 	m := new()
-	ticker := time.NewTicker(30 * time.Second)
+	ticker := time.NewTicker(3 * time.Second)
 
 	for range ticker.C {
 		log.Info("updating metrics")
@@ -61,6 +61,10 @@ func Collect(client rancher.Client) {
 		}
 
 		numberOfClusters, err := client.GetNumberOfManagedClusters()
+
+		if err != nil {
+			log.Errorf("error retrieving number of managed clusters: %v", err)
+		}
 
 		m.rancherMajorVersion.Set(float64(vers["major"]))
 		m.rancherMinorVersion.Set(float64(vers["minor"]))

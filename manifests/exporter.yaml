@@ -1,13 +1,8 @@
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: rancher-exporter
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: rancher-exporter
-  namespace: rancher-exporter
+  namespace: default
 spec:
   selector:
     matchLabels:
@@ -31,7 +26,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: rancher-exporter
-  namespace: rancher-exporter
+  namespace: default
   labels:
     app: rancher-exporter
 spec:
@@ -48,7 +43,7 @@ apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: rancher-exporter
-  namespace: rancher-exporter
+  namespace: default
 spec:
   selector:
     matchLabels:
