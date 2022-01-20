@@ -3,16 +3,21 @@ package rancher
 import (
 	"context"
 	"github.com/ebauman/prometheus-rancher-exporter/semver"
+	"github.com/prometheus/common/log"
+	"github.com/tidwall/gjson"
+	"io"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
+	"net/http"
 )
 
 var (
 	settingGVR                 = schema.GroupVersionResource{Group: "management.cattle.io", Version: "v3", Resource: "settings"}
 	settingGVRNumberOfClusters = schema.GroupVersionResource{Group: "management.cattle.io", Version: "v3", Resource: "clusters"}
+	settingGVRNumberOfNodes    = schema.GroupVersionResource{Group: "management.cattle.io", Version: "v3", Resource: "nodes"}
 )
 
 type Client struct {
@@ -64,6 +69,44 @@ func (r Client) GetK8sDistributions() (map[string]int, error) {
 	}
 
 	return distributions, nil
+}
+
+func (r Client) GetLatestRancherVersion() (map[string]int64, error) {
+	resp, err := http.Get("https://api.github.com/repos/rancher/rancher/releases/latest")
+	defer resp.Body.Close()
+	if err != nil {
+		log.Fatal("failed to open url")
+		return nil, err
+	}
+
+	bodyBytes, err := io.ReadAll(resp.Body)
+
+	if err != nil {
+		log.Fatal("failed to read HTTP body")
+		return nil, err
+	}
+
+	val := gjson.Get(string(bodyBytes), "tag_name")
+
+	result, err := semver.Parse(TrimVersionChar(val.String()))
+
+	if err != nil {
+		log.Fatal("failed to parse Version")
+		return nil, err
+	}
+
+	return result, nil
+
+}
+
+func (r Client) GetNumberOfManagedNodes() (int, error) {
+
+	res, err := r.Client.Resource(settingGVRNumberOfNodes).List(context.Background(), v1.ListOptions{})
+	if err != nil {
+		return 0, err
+	}
+
+	return len(res.Items), nil
 }
 
 // Version returned from CRD is in the format of "vN.N.N", trim the leading "v"

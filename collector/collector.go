@@ -8,16 +8,20 @@ import (
 )
 
 type metrics struct {
-	rancherMajorVersion     prometheus.Gauge
-	rancherMinorVersion     prometheus.Gauge
-	rancherPatchVersion     prometheus.Gauge
-	managedClusterCount     prometheus.Gauge
-	managedK3sClusterCount  prometheus.Gauge
-	managedRKEClusterCount  prometheus.Gauge
-	managedRKE2ClusterCount prometheus.Gauge
-	managedEKSClusterCount  prometheus.Gauge
-	managedAKSClusterCount  prometheus.Gauge
-	managedGKEClusterCount  prometheus.Gauge
+	rancherMajorVersion       prometheus.Gauge
+	rancherMinorVersion       prometheus.Gauge
+	rancherPatchVersion       prometheus.Gauge
+	rancherLatestMajorVersion prometheus.Gauge
+	rancherLatestMinorVersion prometheus.Gauge
+	rancherLatestPatchVersion prometheus.Gauge
+	managedClusterCount       prometheus.Gauge
+	managedK3sClusterCount    prometheus.Gauge
+	managedRKEClusterCount    prometheus.Gauge
+	managedRKE2ClusterCount   prometheus.Gauge
+	managedEKSClusterCount    prometheus.Gauge
+	managedAKSClusterCount    prometheus.Gauge
+	managedGKEClusterCount    prometheus.Gauge
+	managedNodeCount          prometheus.Gauge
 }
 
 func new() metrics {
@@ -33,6 +37,18 @@ func new() metrics {
 		rancherPatchVersion: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "rancher_patch_version",
 			Help: "patch version for rancher installation, where version is semantic and formatted major.minor.patch",
+		}),
+		rancherLatestMajorVersion: prometheus.NewGauge(prometheus.GaugeOpts{
+			Name: "rancher_latest_major_version",
+			Help: "latest major version for rancher, where version is semantic and formatted major.minor.patch",
+		}),
+		rancherLatestMinorVersion: prometheus.NewGauge(prometheus.GaugeOpts{
+			Name: "rancher_latest_minor_version",
+			Help: "latest minor version for rancher, where version is semantic and formatted major.minor.patch",
+		}),
+		rancherLatestPatchVersion: prometheus.NewGauge(prometheus.GaugeOpts{
+			Name: "rancher_latest_patch_version",
+			Help: "latest patch version for rancher, where version is semantic and formatted major.minor.patch",
 		}),
 		managedClusterCount: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "rancher_managed_clusters",
@@ -62,11 +78,18 @@ func new() metrics {
 			Name: "rancher_managed_gke_clusters",
 			Help: "number of RKE clusters this Rancher instance is currently managing",
 		}),
+		managedNodeCount: prometheus.NewGauge(prometheus.GaugeOpts{
+			Name: "rancher_managed_nodes",
+			Help: "number of managed nodes this Rancher instance is currently managing",
+		}),
 	}
 
 	prometheus.MustRegister(m.rancherMajorVersion)
 	prometheus.MustRegister(m.rancherMinorVersion)
 	prometheus.MustRegister(m.rancherPatchVersion)
+	prometheus.MustRegister(m.rancherLatestMajorVersion)
+	prometheus.MustRegister(m.rancherLatestMinorVersion)
+	prometheus.MustRegister(m.rancherLatestPatchVersion)
 	prometheus.MustRegister(m.managedClusterCount)
 	prometheus.MustRegister(m.managedRKEClusterCount)
 	prometheus.MustRegister(m.managedRKE2ClusterCount)
@@ -74,10 +97,14 @@ func new() metrics {
 	prometheus.MustRegister(m.managedEKSClusterCount)
 	prometheus.MustRegister(m.managedAKSClusterCount)
 	prometheus.MustRegister(m.managedGKEClusterCount)
+	prometheus.MustRegister(m.managedNodeCount)
 
 	m.rancherMajorVersion.Set(0)
 	m.rancherMinorVersion.Set(0)
 	m.rancherPatchVersion.Set(0)
+	m.rancherLatestMajorVersion.Set(0)
+	m.rancherLatestMinorVersion.Set(0)
+	m.rancherLatestPatchVersion.Set(0)
 	m.managedClusterCount.Set(0)
 	m.managedRKEClusterCount.Set(0)
 	m.managedRKE2ClusterCount.Set(0)
@@ -85,6 +112,7 @@ func new() metrics {
 	m.managedEKSClusterCount.Set(0)
 	m.managedAKSClusterCount.Set(0)
 	m.managedGKEClusterCount.Set(0)
+	m.managedNodeCount.Set(0)
 
 	return m
 }
@@ -114,11 +142,28 @@ func Collect(client rancher.Client) {
 			log.Errorf("error retrieving number of managed clusters: %v", err)
 		}
 
+		latestVers, err := client.GetLatestRancherVersion()
+
+		if err != nil {
+			log.Errorf("error retrieving latest Rancher version: %v", err)
+		}
+
+		numberOfNodes, err := client.GetNumberOfManagedNodes()
+
+		if err != nil {
+			log.Errorf("error retrieving number of managed nodes: %v", err)
+		}
+
 		m.rancherMajorVersion.Set(float64(vers["major"]))
 		m.rancherMinorVersion.Set(float64(vers["minor"]))
 		m.rancherPatchVersion.Set(float64(vers["patch"]))
 
+		m.rancherLatestMajorVersion.Set(float64(latestVers["major"]))
+		m.rancherLatestMinorVersion.Set(float64(latestVers["minor"]))
+		m.rancherLatestPatchVersion.Set(float64(latestVers["patch"]))
+
 		m.managedClusterCount.Set(float64(numberOfClusters))
+		m.managedNodeCount.Set(float64(numberOfNodes))
 
 		m.managedRKEClusterCount.Set(float64(distributions["rke"]))
 		m.managedRKE2ClusterCount.Set(float64(distributions["rke2"]))
