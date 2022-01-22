@@ -3,7 +3,6 @@ package rancher
 import (
 	"context"
 	"github.com/ebauman/prometheus-rancher-exporter/semver"
-	"github.com/prometheus/common/log"
 	"github.com/tidwall/gjson"
 	"io"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -75,14 +74,12 @@ func (r Client) GetLatestRancherVersion() (map[string]int64, error) {
 	resp, err := http.Get("https://api.github.com/repos/rancher/rancher/releases/latest")
 	defer resp.Body.Close()
 	if err != nil {
-		log.Fatal("failed to open url")
 		return nil, err
 	}
 
 	bodyBytes, err := io.ReadAll(resp.Body)
 
 	if err != nil {
-		log.Fatal("failed to read HTTP body")
 		return nil, err
 	}
 
@@ -91,12 +88,10 @@ func (r Client) GetLatestRancherVersion() (map[string]int64, error) {
 	result, err := semver.Parse(TrimVersionChar(val.String()))
 
 	if err != nil {
-		log.Fatal("failed to parse Version")
 		return nil, err
 	}
 
 	return result, nil
-
 }
 
 func (r Client) GetNumberOfManagedNodes() (int, error) {
