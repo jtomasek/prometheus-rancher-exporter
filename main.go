@@ -19,7 +19,7 @@ func main() {
 	log.Info("Building Rancher Client")
 
 	// Use this for in-cluster config
-	//config, err := rest.InClusterConfig()david
+	// config, err := rest.InClusterConfig()
 
 	// Use this for out of cluster config
 

@@ -7,6 +7,9 @@ import (
 	"time"
 )
 
+type githubToken struct {
+}
+
 type metrics struct {
 	rancherMajorVersion       prometheus.Gauge
 	rancherMinorVersion       prometheus.Gauge
@@ -119,10 +122,15 @@ func new() metrics {
 
 func Collect(client rancher.Client) {
 	m := new()
+
+	var test int
+
 	ticker := time.NewTicker(3 * time.Second)
 
 	for range ticker.C {
 		log.Info("updating metrics")
+
+		log.Info("var:", test)
 
 		vers, err := client.GetRancherVersion()
 
