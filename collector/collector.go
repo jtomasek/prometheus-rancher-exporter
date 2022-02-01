@@ -7,9 +7,6 @@ import (
 	"time"
 )
 
-type githubToken struct {
-}
-
 type metrics struct {
 	rancherMajorVersion       prometheus.Gauge
 	rancherMinorVersion       prometheus.Gauge
