@@ -2,9 +2,8 @@ package fleet_collector
 
 import (
 	"github.com/david-vtuk/prometheus-rancher-exporter/query/fleet"
-	"github.com/ebauman/prometheus-rancher-exporter/query/rancher"
 	"github.com/prometheus/client_golang/prometheus"
-	log "github.com/sirupsen/logrus"
+	"github.com/prometheus/common/log"
 	"time"
 )
 
@@ -27,15 +26,21 @@ func new() metrics {
 	return m
 }
 
-func Collect(client rancher.Client) {
+func Collect(client fleet.Client) {
 
-	log.Info("updating metrics")
-	ticker := time.NewTicker(3 * time.Second)
+	m := new()
 
-	for range ticker.C {
+	fleetTicker := time.NewTicker(2 * time.Second)
 
-		clustergroups, err := client.
+	for range fleetTicker.C {
+		log.Info("updating fleet metrics")
+		clusterGroups, err := client.GetNumberOfClusterGroups()
 
+		if err != nil {
+			log.Errorf("error retrieving number of fleet cluster groups: %v", err)
+		}
+
+		m.fleetClusterGroupCount.Set(float64(clusterGroups))
 	}
 
 }

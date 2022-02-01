@@ -2,7 +2,7 @@ package rancher
 
 import (
 	"context"
-	"github.com/ebauman/prometheus-rancher-exporter/semver"
+	"github.com/david-vtuk/prometheus-rancher-exporter/semver"
 	"github.com/tidwall/gjson"
 	"io"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"

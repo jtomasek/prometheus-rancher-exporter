@@ -1,7 +1,7 @@
 package collector
 
 import (
-	"github.com/ebauman/prometheus-rancher-exporter/query/rancher"
+	"github.com/david-vtuk/prometheus-rancher-exporter/query/rancher"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/log"
 	"time"
@@ -141,7 +141,7 @@ func Collect(client rancher.Client) {
 	ticker := time.NewTicker(3 * time.Second)
 
 	for range ticker.C {
-		log.Info("updating metrics")
+		log.Info("updating rancher metrics")
 
 		vers, err := client.GetRancherVersion()
 
