@@ -73,14 +73,14 @@ func (r Client) GetK8sDistributions() (map[string]int, error) {
 
 func (r Client) GetLatestRancherVersion() (map[string]int64, error) {
 	resp, err := http.Get("https://api.github.com/repos/rancher/rancher/releases/latest")
-	//	defer resp.Body.Close()
+
+	defer resp.Body.Close()
+
 	if err != nil {
 		return nil, err
 	}
 
 	bodyBytes, err := io.ReadAll(resp.Body)
-
-	resp.Body.Close()
 
 	if err != nil {
 		return nil, err
