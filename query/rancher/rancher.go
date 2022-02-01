@@ -3,7 +3,6 @@ package rancher
 import (
 	"context"
 	"github.com/ebauman/prometheus-rancher-exporter/semver"
-	log "github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
 	"io"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -87,10 +86,6 @@ func (r Client) GetLatestRancherVersion() (map[string]int64, error) {
 	}
 
 	val := gjson.Get(string(bodyBytes), "tag_name")
-
-	if val.String() == "" {
-		log.Info("Empty")
-	}
 
 	result, err := semver.Parse(TrimVersionChar(val.String()))
 
