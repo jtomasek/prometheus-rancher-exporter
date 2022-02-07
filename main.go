@@ -3,8 +3,10 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/ebauman/prometheus-rancher-exporter/collector"
-	"github.com/ebauman/prometheus-rancher-exporter/query/rancher"
+	"github.com/david-vtuk/prometheus-rancher-exporter/collector"
+	fleetCollector "github.com/david-vtuk/prometheus-rancher-exporter/fleet-collector"
+	"github.com/david-vtuk/prometheus-rancher-exporter/query/fleet"
+	"github.com/david-vtuk/prometheus-rancher-exporter/query/rancher"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/dynamic"
@@ -46,8 +48,14 @@ func main() {
 		Client: client,
 	}
 
+	FleetClient := fleet.Client{
+		Config: config,
+		Client: client,
+	}
+
 	//Kick off collector in background
 	go collector.Collect(RancherClient)
+	go fleetCollector.Collect(FleetClient)
 
 	//This section will start the HTTP server and expose
 	//any metrics on the /metrics endpoint.

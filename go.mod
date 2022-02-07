@@ -1,4 +1,4 @@
-module github.com/ebauman/prometheus-rancher-exporter
+module github.com/david-vtuk/prometheus-rancher-exporter
 
 go 1.17
 
