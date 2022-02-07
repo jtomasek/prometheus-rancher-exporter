@@ -3,11 +3,13 @@ package rancher
 import (
 	"context"
 	"github.com/david-vtuk/prometheus-rancher-exporter/semver"
-	"github.com/david-vtuk/prometheus-rancher-exporter/types"
 	"github.com/tidwall/gjson"
 	"io"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/rest"
 	"net/http"
 )
 
@@ -16,6 +18,11 @@ var (
 	settingGVRNumberOfClusters = schema.GroupVersionResource{Group: "management.cattle.io", Version: "v3", Resource: "clusters"}
 	settingGVRNumberOfNodes    = schema.GroupVersionResource{Group: "management.cattle.io", Version: "v3", Resource: "nodes"}
 )
+
+type Client struct {
+	Client dynamic.Interface
+	Config *rest.Config
+}
 
 func (r Client) GetRancherVersion() (map[string]int64, error) {
 

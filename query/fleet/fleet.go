@@ -14,12 +14,12 @@ type Client struct {
 }
 
 var (
-	settingGVRNumberOfNodes = schema.GroupVersionResource{Group: "fleet.cattle.io", Version: "v1alpha1", Resource: "clustergroups"}
+	settingGVRNumberOfClusterGroups = schema.GroupVersionResource{Group: "fleet.cattle.io", Version: "v1alpha1", Resource: "clustergroups"}
 )
 
 func (r Client) GetNumberOfClusterGroups() (int, error) {
 
-	res, err := r.Client.Resource(settingGVRNumberOfNodes).List(context.Background(), v1.ListOptions{})
+	res, err := r.Client.Resource(settingGVRNumberOfClusterGroups).List(context.Background(), v1.ListOptions{})
 	if err != nil {
 		return 0, err
 	}
