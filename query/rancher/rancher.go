@@ -12,7 +12,6 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
 	"net/http"
-	"reflect"
 )
 
 var (
@@ -119,10 +118,19 @@ func (r Client) GetClusterConnectedState() (map[string]bool, error) {
 
 	for _, v := range res.Items {
 
-		fmt.Println(unstructured.NestedSlice(v.Object, "status", "conditions"))
+		test2, _, _ := unstructured.NestedSlice(v.Object, "status", "conditions")
 
-		fmt.Println(reflect.TypeOf(v))
-		//fmt.Println(v.Object)
+		for key, value := range test2 {
+
+			fmt.Println("[", key, "] has items:")
+
+			for k, v := range value.(map[string]interface{}) {
+
+				fmt.Println("\t-->", k, ":", v)
+
+			}
+
+		}
 	}
 
 	return clusterStatus, nil
