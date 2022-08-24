@@ -2,6 +2,7 @@ package rancher
 
 import (
 	"context"
+	"fmt"
 	"github.com/david-vtuk/prometheus-rancher-exporter/semver"
 	"github.com/tidwall/gjson"
 	"io"
@@ -11,12 +12,14 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
 	"net/http"
+	"reflect"
 )
 
 var (
-	settingGVR                 = schema.GroupVersionResource{Group: "management.cattle.io", Version: "v3", Resource: "settings"}
-	settingGVRNumberOfClusters = schema.GroupVersionResource{Group: "management.cattle.io", Version: "v3", Resource: "clusters"}
-	settingGVRNumberOfNodes    = schema.GroupVersionResource{Group: "management.cattle.io", Version: "v3", Resource: "nodes"}
+	settingGVR  = schema.GroupVersionResource{Group: "management.cattle.io", Version: "v3", Resource: "settings"}
+	clustersGVR = schema.GroupVersionResource{Group: "management.cattle.io", Version: "v3", Resource: "clusters"}
+	nodeGVR     = schema.GroupVersionResource{Group: "management.cattle.io", Version: "v3", Resource: "nodes"}
+	clusterGVR  = schema.GroupVersionResource{Group: "management.cattle.io", Version: "v3", Resource: "cluster"}
 )
 
 type Client struct {
@@ -44,7 +47,7 @@ func (r Client) GetRancherVersion() (map[string]int64, error) {
 
 func (r Client) GetNumberOfManagedClusters() (int, error) {
 
-	res, err := r.Client.Resource(settingGVRNumberOfClusters).List(context.Background(), v1.ListOptions{})
+	res, err := r.Client.Resource(clustersGVR).List(context.Background(), v1.ListOptions{})
 	if err != nil {
 		return 0, err
 	}
@@ -56,7 +59,7 @@ func (r Client) GetK8sDistributions() (map[string]int, error) {
 
 	distributions := make(map[string]int)
 
-	res, err := r.Client.Resource(settingGVRNumberOfClusters).List(context.Background(), v1.ListOptions{})
+	res, err := r.Client.Resource(clustersGVR).List(context.Background(), v1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -98,12 +101,32 @@ func (r Client) GetLatestRancherVersion() (map[string]int64, error) {
 
 func (r Client) GetNumberOfManagedNodes() (int, error) {
 
-	res, err := r.Client.Resource(settingGVRNumberOfNodes).List(context.Background(), v1.ListOptions{})
+	res, err := r.Client.Resource(nodeGVR).List(context.Background(), v1.ListOptions{})
 	if err != nil {
 		return 0, err
 	}
 
 	return len(res.Items), nil
+}
+
+func (r Client) GetClusterConnectedState() (map[string]bool, error) {
+	clusterStatus := make(map[string]bool)
+
+	res, err := r.Client.Resource(clustersGVR).List(context.Background(), v1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	for _, v := range res.Items {
+
+		fmt.Println(unstructured.NestedSlice(v.Object, "status", "conditions"))
+
+		fmt.Println(reflect.TypeOf(v))
+		//fmt.Println(v.Object)
+	}
+
+	return clusterStatus, nil
+
 }
 
 // Version returned from CRD is in the format of "vN.N.N", trim the leading "v"
@@ -115,3 +138,23 @@ func TrimVersionChar(version string) string {
 	}
 	return version[:0]
 }
+
+/*
+func (r Client) GetK8sDistributions() (map[string]int, error) {
+
+	distributions := make(map[string]int)
+
+	res, err := r.Client.Resource(clustersGVR).List(context.Background(), v1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	for _, v := range res.Items {
+		labels := v.GetLabels()
+		distribution := labels["provider.cattle.io"]
+		distributions[distribution] += 1
+	}
+
+	return distributions, nil
+}
+*/

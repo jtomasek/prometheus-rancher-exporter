@@ -22,6 +22,10 @@ type metrics struct {
 	managedAKSClusterCount    prometheus.Gauge
 	managedGKEClusterCount    prometheus.Gauge
 	managedNodeCount          prometheus.Gauge
+
+	// Cluster level metrics
+	clusterConditionConnected    prometheus.GaugeVec
+	clusterConditionNotConnected prometheus.GaugeVec
 }
 
 func new() metrics {
@@ -82,6 +86,16 @@ func new() metrics {
 			Name: "rancher_managed_nodes",
 			Help: "number of managed nodes this Rancher instance is currently managing",
 		}),
+		clusterConditionConnected: *prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Name: "cluster_connected",
+			Help: "identify if a downstream cluster is connected to Rancher",
+		}, []string{"Name"},
+		),
+		clusterConditionNotConnected: *prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Name: "cluster_not_connected",
+			Help: "identify if a downstream cluster is not connected to Rancher",
+		}, []string{"Name"},
+		),
 	}
 
 	prometheus.MustRegister(m.rancherMajorVersion)
@@ -98,6 +112,8 @@ func new() metrics {
 	prometheus.MustRegister(m.managedAKSClusterCount)
 	prometheus.MustRegister(m.managedGKEClusterCount)
 	prometheus.MustRegister(m.managedNodeCount)
+	prometheus.MustRegister(m.clusterConditionConnected)
+	prometheus.MustRegister(m.clusterConditionNotConnected)
 
 	m.rancherMajorVersion.Set(0)
 	m.rancherMinorVersion.Set(0)
@@ -142,6 +158,8 @@ func Collect(client rancher.Client) {
 
 	for range ticker.C {
 		log.Info("updating rancher metrics")
+
+		client.GetClusterConnectedState()
 
 		vers, err := client.GetRancherVersion()
 
