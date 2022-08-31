@@ -5,6 +5,13 @@
 * Rancher Major/Minor/Patch versions
 * Total number of Managed clusters
 * Number of RKE/RKE2/K3s/EKS/AKS/GKE clusters
+* Total number of Managed nodes
+
+# Grafana Dashboard
+
+./manifests/grafana-dashboard includes a basic dashboard in JSON format that can be imported into Grafana.
+
+![Image of Dashboard example](dashboard.png)
 
 # Prereqs
 
@@ -20,8 +27,6 @@ Uncomment the following from `main.go`
 ```
 
 ## External cluster config
-
-(default) and is handled by the following code in `main.go`
 
 ```go
 // Use this for out of cluster config
