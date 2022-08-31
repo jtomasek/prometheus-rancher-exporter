@@ -51,7 +51,7 @@ func (r Client) GetNumberOfManagedClusters() (int, error) {
 		return 0, err
 	}
 
-	return len(res.Items), nil
+	return len(res.Items) - 1, nil
 }
 
 func (r Client) GetK8sDistributions() (map[string]int, error) {
@@ -74,6 +74,8 @@ func (r Client) GetK8sDistributions() (map[string]int, error) {
 
 func (r Client) GetLatestRancherVersion() (map[string]int64, error) {
 	resp, err := http.Get("https://api.github.com/repos/rancher/rancher/releases/latest")
+
+	fmt.Println(resp.Body)
 
 	defer resp.Body.Close()
 
@@ -116,25 +118,56 @@ func (r Client) GetClusterConnectedState() (map[string]bool, error) {
 		return nil, err
 	}
 
-	for _, v := range res.Items {
+	// Iterate through each cluster management object
+	for _, cluster := range res.Items {
 
-		test2, _, _ := unstructured.NestedSlice(v.Object, "status", "conditions")
+		// Grab Cluster name
+		clusterName, _, err := unstructured.NestedString(cluster.Object, "spec", "displayName")
 
-		for key, value := range test2 {
+		if err != nil {
+			return nil, err
+		}
 
-			fmt.Println("[", key, "] has items:")
+		// Ignore if it's the "Local" cluster
+		if clusterName != "local" {
 
-			for k, v := range value.(map[string]interface{}) {
+			clusterStatus[clusterName] = false
 
-				fmt.Println("\t-->", k, ":", v)
+			// Grab status.conditions slide from object
+			statusSlice, _, _ := unstructured.NestedSlice(cluster.Object, "status", "conditions")
 
+			// Iterate through each status slice to determine if cluster is connected
+			for _, value := range statusSlice {
+
+				// Determine whether we find both conditions in each status message
+				// We're looking for both when type == connected and status == true
+				// to identify if a cluster is connected to this Rancher instance
+
+				// Reset values when iterating through
+				foundStatus := false
+				foundType := false
+
+				for k, v := range value.(map[string]interface{}) {
+
+					if k == "type" && v.(string) == "Connected" {
+						foundType = true
+					}
+
+					if k == "status" && v.(string) == "True" {
+						foundStatus = true
+					}
+
+					if foundStatus == true && foundType == true {
+						clusterStatus[clusterName] = true
+					}
+
+				}
 			}
 
 		}
 	}
 
 	return clusterStatus, nil
-
 }
 
 // Version returned from CRD is in the format of "vN.N.N", trim the leading "v"

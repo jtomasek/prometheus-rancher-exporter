@@ -159,7 +159,10 @@ func Collect(client rancher.Client) {
 	for range ticker.C {
 		log.Info("updating rancher metrics")
 
-		client.GetClusterConnectedState()
+		state, err := client.GetClusterConnectedState()
+		if err != nil {
+			return
+		}
 
 		vers, err := client.GetRancherVersion()
 
@@ -198,6 +201,14 @@ func Collect(client rancher.Client) {
 		m.managedEKSClusterCount.Set(float64(distributions["eks"]))
 		m.managedAKSClusterCount.Set(float64(distributions["aks"]))
 		m.managedGKEClusterCount.Set(float64(distributions["gke"]))
+
+		for key, value := range state {
+			if value == true {
+				m.clusterConditionConnected.WithLabelValues(key).Set(1)
+			} else {
+				m.clusterConditionNotConnected.WithLabelValues(key).Set(1)
+			}
+		}
 	}
 
 }
