@@ -1,4 +1,5 @@
-FROM ubuntu:20.10
+FROM ubuntu:22.10
+RUN apt-get update && apt-get install -y ca-certificates
 RUN mkdir /app
 COPY ./bin/prometheus-rancher-exporter /app/
 WORKDIR /app

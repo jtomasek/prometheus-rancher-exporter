@@ -26,6 +26,12 @@ type metrics struct {
 	// Cluster level metrics
 	clusterConditionConnected    prometheus.GaugeVec
 	clusterConditionNotConnected prometheus.GaugeVec
+
+	// Downstream cluster metrics
+
+	downstreamClusterK8sMajorVersion prometheus.GaugeVec
+	downstreamClusterK8sMinorVersion prometheus.GaugeVec
+	downstreamClusterK8sPatchVersion prometheus.GaugeVec
 }
 
 func new() metrics {
@@ -96,6 +102,21 @@ func new() metrics {
 			Help: "identify if a downstream cluster is not connected to Rancher",
 		}, []string{"Name"},
 		),
+		downstreamClusterK8sMajorVersion: *prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Name: "downstream_cluster_major_version",
+			Help: "major version for k8s version, where version is semantic and formatted major.minor.patch",
+		}, []string{"Name"},
+		),
+		downstreamClusterK8sMinorVersion: *prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Name: "downstream_cluster_minor_version",
+			Help: "minor version for k8s version, where version is semantic and formatted major.minor.patch",
+		}, []string{"Name"},
+		),
+		downstreamClusterK8sPatchVersion: *prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Name: "downstream_cluster_patch_version",
+			Help: "patch version for k8s version, where version is semantic and formatted major.minor.patch",
+		}, []string{"Name"},
+		),
 	}
 
 	prometheus.MustRegister(m.rancherMajorVersion)
@@ -114,6 +135,9 @@ func new() metrics {
 	prometheus.MustRegister(m.managedNodeCount)
 	prometheus.MustRegister(m.clusterConditionConnected)
 	prometheus.MustRegister(m.clusterConditionNotConnected)
+	prometheus.MustRegister(m.downstreamClusterK8sMajorVersion)
+	prometheus.MustRegister(m.downstreamClusterK8sMinorVersion)
+	prometheus.MustRegister(m.downstreamClusterK8sPatchVersion)
 
 	m.rancherMajorVersion.Set(0)
 	m.rancherMinorVersion.Set(0)
@@ -188,6 +212,18 @@ func Collect(client rancher.Client) {
 			log.Errorf("error retrieving number of managed nodes: %v", err)
 		}
 
+		downstreamClusterVersions, err := client.GetDownstreamClusterVersions()
+
+		if err != nil {
+			log.Errorf("error retrieving downstream k8s cluster versions: %v", err)
+		}
+
+		for _, value := range downstreamClusterVersions {
+			m.downstreamClusterK8sMajorVersion.WithLabelValues(value.Name).Set(value.Major)
+			m.downstreamClusterK8sMinorVersion.WithLabelValues(value.Name).Set(value.Minor)
+			m.downstreamClusterK8sPatchVersion.WithLabelValues(value.Name).Set(value.Patch)
+		}
+
 		m.rancherMajorVersion.Set(float64(vers["major"]))
 		m.rancherMinorVersion.Set(float64(vers["minor"]))
 		m.rancherPatchVersion.Set(float64(vers["patch"]))
@@ -205,8 +241,10 @@ func Collect(client rancher.Client) {
 		for key, value := range state {
 			if value == true {
 				m.clusterConditionConnected.WithLabelValues(key).Set(1)
+				m.clusterConditionNotConnected.WithLabelValues(key).Set(0)
 			} else {
 				m.clusterConditionNotConnected.WithLabelValues(key).Set(1)
+				m.clusterConditionConnected.WithLabelValues(key).Set(0)
 			}
 		}
 	}

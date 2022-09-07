@@ -2,7 +2,6 @@ package rancher
 
 import (
 	"context"
-	"fmt"
 	"github.com/david-vtuk/prometheus-rancher-exporter/semver"
 	"github.com/tidwall/gjson"
 	"io"
@@ -24,6 +23,13 @@ var (
 type Client struct {
 	Client dynamic.Interface
 	Config *rest.Config
+}
+
+type clusterVersion struct {
+	Name  string
+	Major float64
+	Minor float64
+	Patch float64
 }
 
 func (r Client) GetRancherVersion() (map[string]int64, error) {
@@ -74,8 +80,6 @@ func (r Client) GetK8sDistributions() (map[string]int, error) {
 
 func (r Client) GetLatestRancherVersion() (map[string]int64, error) {
 	resp, err := http.Get("https://api.github.com/repos/rancher/rancher/releases/latest")
-
-	fmt.Println(resp.Body)
 
 	defer resp.Body.Close()
 
@@ -170,7 +174,52 @@ func (r Client) GetClusterConnectedState() (map[string]bool, error) {
 	return clusterStatus, nil
 }
 
-// Version returned from CRD is in the format of "vN.N.N", trim the leading "v"
+func (r Client) GetDownstreamClusterVersions() ([]clusterVersion, error) {
+
+	var clusters []clusterVersion
+
+	res, err := r.Client.Resource(clustersGVR).List(context.Background(), v1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	// Iterate through each cluster management object
+	for _, cluster := range res.Items {
+
+		// Grab Cluster name
+		clusterName, _, err := unstructured.NestedString(cluster.Object, "spec", "displayName")
+
+		if err != nil {
+			return nil, err
+		}
+
+		clusterK8sVersion, _, err := unstructured.NestedString(cluster.Object, "status", "version", "gitVersion")
+
+		if err != nil {
+			return nil, err
+		}
+
+		result, err := semver.Parse(TrimVersionChar(clusterK8sVersion))
+
+		if err != nil {
+			return nil, err
+		}
+
+		clusterInfo := clusterVersion{
+			Name:  clusterName,
+			Major: float64(result["major"]),
+			Minor: float64(result["minor"]),
+			Patch: float64(result["patch"]),
+		}
+
+		clusters = append(clusters, clusterInfo)
+	}
+
+	return clusters, nil
+
+}
+
+// TrimVersionChar Version returned from CRD is in the format of "vN.N.N", trim the leading "v"
 func TrimVersionChar(version string) string {
 	for i := range version {
 		if i > 0 {
@@ -179,23 +228,3 @@ func TrimVersionChar(version string) string {
 	}
 	return version[:0]
 }
-
-/*
-func (r Client) GetK8sDistributions() (map[string]int, error) {
-
-	distributions := make(map[string]int)
-
-	res, err := r.Client.Resource(clustersGVR).List(context.Background(), v1.ListOptions{})
-	if err != nil {
-		return nil, err
-	}
-
-	for _, v := range res.Items {
-		labels := v.GetLabels()
-		distribution := labels["provider.cattle.io"]
-		distributions[distribution] += 1
-	}
-
-	return distributions, nil
-}
-*/
