@@ -26,10 +26,22 @@ type Client struct {
 }
 
 type clusterVersion struct {
-	Name  string
-	Major float64
-	Minor float64
-	Patch float64
+	Name    string
+	Version string
+}
+
+func (r Client) GetInstalledRancherVersion() (string, error) {
+
+	res, err := r.Client.Resource(settingGVR).Get(context.Background(), "server-version", v1.GetOptions{})
+	if err != nil {
+		return "", err
+	}
+
+	version, _, err := unstructured.NestedString(res.UnstructuredContent(), "value")
+	if err != nil {
+		return "", err
+	}
+	return version, nil
 }
 
 func (r Client) GetRancherVersion() (map[string]int64, error) {
@@ -78,30 +90,24 @@ func (r Client) GetK8sDistributions() (map[string]int, error) {
 	return distributions, nil
 }
 
-func (r Client) GetLatestRancherVersion() (map[string]int64, error) {
+func (r Client) GetLatestRancherVersion() (string, error) {
 	resp, err := http.Get("https://api.github.com/repos/rancher/rancher/releases/latest")
 
 	defer resp.Body.Close()
 
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	bodyBytes, err := io.ReadAll(resp.Body)
 
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	val := gjson.Get(string(bodyBytes), "tag_name")
 
-	result, err := semver.Parse(TrimVersionChar(val.String()))
-
-	if err != nil {
-		return nil, err
-	}
-
-	return result, nil
+	return val.String(), nil
 }
 
 func (r Client) GetNumberOfManagedNodes() (int, error) {
@@ -199,17 +205,9 @@ func (r Client) GetDownstreamClusterVersions() ([]clusterVersion, error) {
 			return nil, err
 		}
 
-		result, err := semver.Parse(TrimVersionChar(clusterK8sVersion))
-
-		if err != nil {
-			return nil, err
-		}
-
 		clusterInfo := clusterVersion{
-			Name:  clusterName,
-			Major: float64(result["major"]),
-			Minor: float64(result["minor"]),
-			Patch: float64(result["patch"]),
+			Name:    clusterName,
+			Version: clusterK8sVersion,
 		}
 
 		clusters = append(clusters, clusterInfo)
