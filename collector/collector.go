@@ -8,20 +8,17 @@ import (
 )
 
 type metrics struct {
-	rancherMajorVersion       prometheus.Gauge
-	rancherMinorVersion       prometheus.Gauge
-	rancherPatchVersion       prometheus.Gauge
-	rancherLatestMajorVersion prometheus.Gauge
-	rancherLatestMinorVersion prometheus.Gauge
-	rancherLatestPatchVersion prometheus.Gauge
-	managedClusterCount       prometheus.Gauge
-	managedK3sClusterCount    prometheus.Gauge
-	managedRKEClusterCount    prometheus.Gauge
-	managedRKE2ClusterCount   prometheus.Gauge
-	managedEKSClusterCount    prometheus.Gauge
-	managedAKSClusterCount    prometheus.Gauge
-	managedGKEClusterCount    prometheus.Gauge
-	managedNodeCount          prometheus.Gauge
+	installedRancherVersion prometheus.GaugeVec
+	latestRancherVersion    prometheus.GaugeVec
+
+	managedClusterCount     prometheus.Gauge
+	managedK3sClusterCount  prometheus.Gauge
+	managedRKEClusterCount  prometheus.Gauge
+	managedRKE2ClusterCount prometheus.Gauge
+	managedEKSClusterCount  prometheus.Gauge
+	managedAKSClusterCount  prometheus.Gauge
+	managedGKEClusterCount  prometheus.Gauge
+	managedNodeCount        prometheus.Gauge
 
 	// Cluster level metrics
 	clusterConditionConnected    prometheus.GaugeVec
@@ -29,37 +26,22 @@ type metrics struct {
 
 	// Downstream cluster metrics
 
-	downstreamClusterK8sMajorVersion prometheus.GaugeVec
-	downstreamClusterK8sMinorVersion prometheus.GaugeVec
-	downstreamClusterK8sPatchVersion prometheus.GaugeVec
+	downstreamClusterVersion prometheus.GaugeVec
 }
 
 func new() metrics {
 	m := metrics{
-		rancherMajorVersion: prometheus.NewGauge(prometheus.GaugeOpts{
-			Name: "rancher_major_version",
-			Help: "major version for rancher installation, where version is semantic and formatted major.minor.patch",
-		}),
-		rancherMinorVersion: prometheus.NewGauge(prometheus.GaugeOpts{
-			Name: "rancher_minor_version",
-			Help: "minor version for rancher installation, where version is semantic and formatted major.minor.patch",
-		}),
-		rancherPatchVersion: prometheus.NewGauge(prometheus.GaugeOpts{
-			Name: "rancher_patch_version",
-			Help: "patch version for rancher installation, where version is semantic and formatted major.minor.patch",
-		}),
-		rancherLatestMajorVersion: prometheus.NewGauge(prometheus.GaugeOpts{
-			Name: "rancher_latest_major_version",
-			Help: "latest major version for rancher, where version is semantic and formatted major.minor.patch",
-		}),
-		rancherLatestMinorVersion: prometheus.NewGauge(prometheus.GaugeOpts{
-			Name: "rancher_latest_minor_version",
-			Help: "latest minor version for rancher, where version is semantic and formatted major.minor.patch",
-		}),
-		rancherLatestPatchVersion: prometheus.NewGauge(prometheus.GaugeOpts{
-			Name: "rancher_latest_patch_version",
-			Help: "latest patch version for rancher, where version is semantic and formatted major.minor.patch",
-		}),
+
+		installedRancherVersion: *prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Name: "installed_rancher_version",
+			Help: "version of the installed Rancher instance",
+		}, []string{"version"},
+		),
+		latestRancherVersion: *prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Name: "latest_rancher_version",
+			Help: "version of the most recent Rancher release",
+		}, []string{"version"},
+		),
 		managedClusterCount: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "rancher_managed_clusters",
 			Help: "number of clusters this Rancher instance is currently managing",
@@ -102,29 +84,15 @@ func new() metrics {
 			Help: "identify if a downstream cluster is not connected to Rancher",
 		}, []string{"Name"},
 		),
-		downstreamClusterK8sMajorVersion: *prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Name: "downstream_cluster_major_version",
-			Help: "major version for k8s version, where version is semantic and formatted major.minor.patch",
-		}, []string{"Name"},
-		),
-		downstreamClusterK8sMinorVersion: *prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Name: "downstream_cluster_minor_version",
-			Help: "minor version for k8s version, where version is semantic and formatted major.minor.patch",
-		}, []string{"Name"},
-		),
-		downstreamClusterK8sPatchVersion: *prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Name: "downstream_cluster_patch_version",
-			Help: "patch version for k8s version, where version is semantic and formatted major.minor.patch",
-		}, []string{"Name"},
+		downstreamClusterVersion: *prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Name: "cluster_k8s_version",
+			Help: "version of K8s running in the downstream cluster",
+		}, []string{"Name", "Version"},
 		),
 	}
 
-	prometheus.MustRegister(m.rancherMajorVersion)
-	prometheus.MustRegister(m.rancherMinorVersion)
-	prometheus.MustRegister(m.rancherPatchVersion)
-	prometheus.MustRegister(m.rancherLatestMajorVersion)
-	prometheus.MustRegister(m.rancherLatestMinorVersion)
-	prometheus.MustRegister(m.rancherLatestPatchVersion)
+	prometheus.MustRegister(m.installedRancherVersion)
+	prometheus.MustRegister(m.latestRancherVersion)
 	prometheus.MustRegister(m.managedClusterCount)
 	prometheus.MustRegister(m.managedRKEClusterCount)
 	prometheus.MustRegister(m.managedRKE2ClusterCount)
@@ -135,16 +103,9 @@ func new() metrics {
 	prometheus.MustRegister(m.managedNodeCount)
 	prometheus.MustRegister(m.clusterConditionConnected)
 	prometheus.MustRegister(m.clusterConditionNotConnected)
-	prometheus.MustRegister(m.downstreamClusterK8sMajorVersion)
-	prometheus.MustRegister(m.downstreamClusterK8sMinorVersion)
-	prometheus.MustRegister(m.downstreamClusterK8sPatchVersion)
 
-	m.rancherMajorVersion.Set(0)
-	m.rancherMinorVersion.Set(0)
-	m.rancherPatchVersion.Set(0)
-	m.rancherLatestMajorVersion.Set(0)
-	m.rancherLatestMinorVersion.Set(0)
-	m.rancherLatestPatchVersion.Set(0)
+	prometheus.MustRegister(m.downstreamClusterVersion)
+
 	m.managedClusterCount.Set(0)
 	m.managedRKEClusterCount.Set(0)
 	m.managedRKE2ClusterCount.Set(0)
@@ -171,10 +132,7 @@ func Collect(client rancher.Client) {
 				log.Errorf("error retrieving latest Rancher version: %v", err)
 			}
 
-			m.rancherLatestMajorVersion.Set(float64(latestVers["major"]))
-			m.rancherLatestMinorVersion.Set(float64(latestVers["minor"]))
-			m.rancherLatestPatchVersion.Set(float64(latestVers["patch"]))
-
+			m.latestRancherVersion.WithLabelValues(latestVers).Set(1)
 		}
 	}()
 
@@ -183,15 +141,14 @@ func Collect(client rancher.Client) {
 	for range ticker.C {
 		log.Info("updating rancher metrics")
 
-		state, err := client.GetClusterConnectedState()
+		installedVersion, err := client.GetInstalledRancherVersion()
 		if err != nil {
 			return
 		}
 
-		vers, err := client.GetRancherVersion()
-
+		state, err := client.GetClusterConnectedState()
 		if err != nil {
-			log.Errorf("error retrieving rancher version: %v", err)
+			return
 		}
 
 		numberOfClusters, err := client.GetNumberOfManagedClusters()
@@ -218,15 +175,13 @@ func Collect(client rancher.Client) {
 			log.Errorf("error retrieving downstream k8s cluster versions: %v", err)
 		}
 
-		for _, value := range downstreamClusterVersions {
-			m.downstreamClusterK8sMajorVersion.WithLabelValues(value.Name).Set(value.Major)
-			m.downstreamClusterK8sMinorVersion.WithLabelValues(value.Name).Set(value.Minor)
-			m.downstreamClusterK8sPatchVersion.WithLabelValues(value.Name).Set(value.Patch)
-		}
+		m.installedRancherVersion.WithLabelValues(installedVersion).Set(1)
 
-		m.rancherMajorVersion.Set(float64(vers["major"]))
-		m.rancherMinorVersion.Set(float64(vers["minor"]))
-		m.rancherPatchVersion.Set(float64(vers["patch"]))
+		for _, value := range downstreamClusterVersions {
+
+			m.downstreamClusterVersion.WithLabelValues(value.Name, value.Version).Set(1)
+
+		}
 
 		m.managedClusterCount.Set(float64(numberOfClusters))
 		m.managedNodeCount.Set(float64(numberOfNodes))
