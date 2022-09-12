@@ -25,8 +25,11 @@ type metrics struct {
 	clusterConditionNotConnected prometheus.GaugeVec
 
 	// Downstream cluster metrics
-
 	downstreamClusterVersion prometheus.GaugeVec
+
+	// User related
+	tokenCount prometheus.Gauge
+	userCount  prometheus.Gauge
 }
 
 func new() metrics {
@@ -89,6 +92,14 @@ func new() metrics {
 			Help: "version of K8s running in the downstream cluster",
 		}, []string{"Name", "Version"},
 		),
+		tokenCount: prometheus.NewGauge(prometheus.GaugeOpts{
+			Name: "rancher_tokens",
+			Help: "number of tokens issued by Rancher",
+		}),
+		userCount: prometheus.NewGauge(prometheus.GaugeOpts{
+			Name: "rancher_users",
+			Help: "number of users in this Rancher instance",
+		}),
 	}
 
 	prometheus.MustRegister(m.installedRancherVersion)
@@ -106,6 +117,9 @@ func new() metrics {
 
 	prometheus.MustRegister(m.downstreamClusterVersion)
 
+	prometheus.MustRegister(m.tokenCount)
+	prometheus.MustRegister(m.userCount)
+
 	m.managedClusterCount.Set(0)
 	m.managedRKEClusterCount.Set(0)
 	m.managedRKE2ClusterCount.Set(0)
@@ -114,6 +128,8 @@ func new() metrics {
 	m.managedAKSClusterCount.Set(0)
 	m.managedGKEClusterCount.Set(0)
 	m.managedNodeCount.Set(0)
+	m.tokenCount.Set(0)
+	m.userCount.Set(0)
 
 	return m
 }
@@ -202,6 +218,21 @@ func Collect(client rancher.Client) {
 				m.clusterConditionConnected.WithLabelValues(key).Set(0)
 			}
 		}
+
+		tokens, err := client.GetNumberOfTokens()
+		if err != nil {
+			log.Errorf("error retrieving number of tokens: %v", err)
+		}
+
+		m.tokenCount.Set(float64(tokens))
+
+		users, err := client.GetNumberOfUsers()
+		if err != nil {
+			log.Errorf("error retrieving number of users: %v", err)
+		}
+
+		m.userCount.Set(float64(users))
+
 	}
 
 }
