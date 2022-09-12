@@ -120,6 +120,9 @@ func new() metrics {
 	prometheus.MustRegister(m.tokenCount)
 	prometheus.MustRegister(m.userCount)
 
+	m.installedRancherVersion.Reset()
+	m.latestRancherVersion.Reset()
+
 	m.managedClusterCount.Set(0)
 	m.managedRKEClusterCount.Set(0)
 	m.managedRKE2ClusterCount.Set(0)
@@ -128,6 +131,12 @@ func new() metrics {
 	m.managedAKSClusterCount.Set(0)
 	m.managedGKEClusterCount.Set(0)
 	m.managedNodeCount.Set(0)
+
+	m.clusterConditionConnected.Reset()
+	m.clusterConditionNotConnected.Reset()
+
+	m.downstreamClusterVersion.Reset()
+
 	m.tokenCount.Set(0)
 	m.userCount.Set(0)
 
