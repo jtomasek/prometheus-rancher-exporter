@@ -120,9 +120,6 @@ func new() metrics {
 	prometheus.MustRegister(m.tokenCount)
 	prometheus.MustRegister(m.userCount)
 
-	m.installedRancherVersion.Reset()
-	m.latestRancherVersion.Reset()
-
 	m.managedClusterCount.Set(0)
 	m.managedRKEClusterCount.Set(0)
 	m.managedRKE2ClusterCount.Set(0)
@@ -151,6 +148,9 @@ func Collect(client rancher.Client) {
 		ticker := time.NewTicker(1 * time.Minute)
 
 		for range ticker.C {
+
+			m.latestRancherVersion.Reset()
+
 			latestVers, err := client.GetLatestRancherVersion()
 
 			if err != nil {
@@ -251,7 +251,6 @@ func Collect(client rancher.Client) {
 // Reset GaugeVecs on each tick - facilitate state transition
 func resetGaugeMetrics(m metrics) {
 
-	m.latestRancherVersion.Reset()
 	m.downstreamClusterVersion.Reset()
 	m.clusterConditionNotConnected.Reset()
 	m.clusterConditionConnected.Reset()
