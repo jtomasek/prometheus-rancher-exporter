@@ -30,12 +30,12 @@ func main() {
 		flag.Parse()
 		config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
 
-		if err != nil {
-			log.Fatal("Unable to construct Rancher client Config")
-		}
-
 
 	*/
+	if err != nil {
+		log.Fatal("Unable to construct Rancher client Config")
+	}
+
 	client, err := dynamic.NewForConfig(config)
 	if err != nil {
 		log.Fatal("Unable to construct Rancher client")

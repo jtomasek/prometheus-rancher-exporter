@@ -166,6 +166,8 @@ func Collect(client rancher.Client) {
 	for range ticker.C {
 		log.Info("updating rancher metrics")
 
+		resetGaugeMetrics(m)
+
 		installedVersion, err := client.GetInstalledRancherVersion()
 		if err != nil {
 			return
@@ -244,4 +246,14 @@ func Collect(client rancher.Client) {
 
 	}
 
+}
+
+// Reset GaugeVecs on each tick - facilitate state transition
+func resetGaugeMetrics(m metrics) {
+
+	m.latestRancherVersion.Reset()
+	m.downstreamClusterVersion.Reset()
+	m.clusterConditionNotConnected.Reset()
+	m.clusterConditionConnected.Reset()
+	m.installedRancherVersion.Reset()
 }
