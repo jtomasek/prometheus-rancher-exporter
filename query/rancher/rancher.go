@@ -187,12 +187,15 @@ func (r Client) GetDownstreamClusterVersions() ([]clusterVersion, error) {
 			return nil, err
 		}
 
-		clusterInfo := clusterVersion{
-			Name:    clusterName,
-			Version: clusterK8sVersion,
-		}
+		if clusterK8sVersion != "" {
 
-		clusters = append(clusters, clusterInfo)
+			clusterInfo := clusterVersion{
+				Name:    clusterName,
+				Version: clusterK8sVersion,
+			}
+
+			clusters = append(clusters, clusterInfo)
+		}
 	}
 
 	return clusters, nil
