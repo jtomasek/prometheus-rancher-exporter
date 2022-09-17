@@ -1,32 +1,25 @@
-# Prometheus Exporter for Rancher
+# Unofficial Prometheus Exporter for Rancher
 
-# Current Metrics Scraped:
+**Note** : This project is not officially supported by Rancher/Suse.
 
-* Rancher Major/Minor/Patch versions
-* Total number of Managed clusters
-* Number of RKE/RKE2/K3s/EKS/AKS/GKE clusters
-* Total number of Managed nodes
+# Quickstart
+
+1. Enable monitoring in the Rancher Management Cluster, aka `local` cluster
+2. Apply the manifest from this repo : `kubectl apply -f ./manifests/exporter.yaml`
 
 # Grafana Dashboard
 
-./manifests/grafana-dashboard includes a basic dashboard in JSON format that can be imported into Grafana.
+`./manifests/grafana-dashboard` includes a basic dashboard in JSON format that can be imported into Grafana.
 
-![Image of Dashboard example](dashboard.png)
+![img.png](./img/dashboard.png)
 
-# Prereqs
+# Developing
 
-* Decide how to auth with the `local` cluster:
-
-## In-cluster config
-
-Uncomment the following from `main.go`
-
-```go
-// Use this for in-cluster config 
-//config, err := rest.InClusterConfig()
-```
+By default, the exporter will use in-cluster authentication via a associated service account
 
 ## External cluster config
+
+To test using external authentication via the local `kubeconfig`, uncomment the following:
 
 ```go
 // Use this for out of cluster config
@@ -40,6 +33,11 @@ flag.Parse()
 config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
 ```
 
-# Testing
+Comment out the following
+```go
+// Use this for in-cluster config 
+//config, err := rest.InClusterConfig()
+```
 
-`go run main.go` and access `http://localhost:8080`
+* `go run main.go`
+* Navigate to http://localhost:8080/metrics
