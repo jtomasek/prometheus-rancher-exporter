@@ -143,7 +143,7 @@ func new() metrics {
 func Collect(client rancher.Client) {
 	m := new()
 
-	// Github API request limits necessitate polling at a different interval
+	// GitHub API request limits necessitate polling at a different interval
 	go func() {
 		ticker := time.NewTicker(1 * time.Minute)
 

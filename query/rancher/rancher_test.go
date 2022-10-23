@@ -1,17 +1,44 @@
 package rancher
 
 import (
+	"flag"
+	"fmt"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
+	"os"
+	"os/user"
 	"reflect"
 	"testing"
 )
 
-func TestClient_GetClusterConnectedState(t *testing.T) {
-	type fields struct {
-		Client dynamic.Interface
-		Config *rest.Config
+type fields struct {
+	Client dynamic.Interface
+	Config *rest.Config
+}
+
+var testClient fields
+
+func TestMain(m *testing.M) {
+	currentUser, err := user.Current()
+	if err != nil {
+		log.Fatal(err.Error())
 	}
+
+	kubeconfig := flag.String("kubeconfig", fmt.Sprintf("/home/%s/.kube/config", currentUser.Username), "absolute path to the kubeconfig file")
+	flag.Parse()
+
+	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
+	client, err := dynamic.NewForConfig(config)
+
+	testClient.Client = client
+	testClient.Config = config
+
+	os.Exit(m.Run())
+}
+
+func TestClient_GetClusterConnectedState(t *testing.T) {
 	tests := []struct {
 		name    string
 		fields  fields
@@ -19,6 +46,7 @@ func TestClient_GetClusterConnectedState(t *testing.T) {
 		wantErr bool
 	}{
 		// TODO: Add test cases.
+		{"test=1", testClient, map[string]bool{"nsxt-demo-cluster": true, "tools-cluster": true}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
