@@ -49,7 +49,6 @@ jobs:
             --network "nw01"
 
       - name: Set up latest Rancher
-        env:
         url: "172.18.0.1.omg.howdoi.website"
         cluster: "k3d-upstream"
         run: |
