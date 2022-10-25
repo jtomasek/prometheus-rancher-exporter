@@ -71,25 +71,16 @@ jobs:
           # wait for cluster to settle
           sleep 30
 
-  build:
-    needs: build-rancher-env
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.18
 
-    - name: Set up Go
-      uses: actions/setup-go@v3
-      with:
-        go-version: 1.18
-        
-    - name: Create folder
-      run: mkdir ./bin/
+      - name: Create folder
+        run: mkdir ./bin/
 
-    - name: Build
-      run: go build -v -o ./bin/prometheus-rancher-exporter
+      - name: Build
+        run: go build -v -o ./bin/prometheus-rancher-exporter
 
-    - name: Test
-      run: go test -v ./...
-      
-    - name: Test
-      run: ls -la ./bin/
+      - name: Test
+        run: go test -v ./...
