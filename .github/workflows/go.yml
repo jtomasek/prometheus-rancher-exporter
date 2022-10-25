@@ -6,6 +6,9 @@ name: Go
 on:
   workflow_dispatch:
 
+env:
+  DOWNSTREAM_K3S_VERSION: 'v1.24.4+k3s1'
+
 jobs:
 
   build-rancher-env:
@@ -34,6 +37,7 @@ jobs:
           args: >-
             -p "80:80@agent:0:direct"
             -p "443:443@agent:0:direct"
+            --image docker.io/rancher/k3s:${{ env.DOWNSTREAM_K3S_VERSION }}
             --api-port 6443
             --agents 1
             --k3s-arg '--kubelet-arg=eviction-hard=imagefs.available<1%,nodefs.available<1%@agent:*'
@@ -47,6 +51,7 @@ jobs:
           args: >-
             -p "81:80@agent:0:direct"
             -p "444:443@agent:0:direct"
+            --image docker.io/rancher/k3s:${{ env.DOWNSTREAM_K3S_VERSION }}
             --api-port 6644
             --agents 1
             --k3s-arg '--kubelet-arg=eviction-hard=imagefs.available<1%,nodefs.available<1%@agent:*'
@@ -78,9 +83,6 @@ jobs:
 
       - name: Create folder
         run: mkdir ./bin/
-
-      - name: Build
-        run: go build -v -o ./bin/prometheus-rancher-exporter
 
       - name: Test
         run: |

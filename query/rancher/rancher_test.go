@@ -45,8 +45,7 @@ func TestClient_GetClusterConnectedState(t *testing.T) {
 		want    map[string]bool
 		wantErr bool
 	}{
-		// TODO: Add test cases.
-		{"test-1", testClient, map[string]bool{"nsxt-demo-cluster": true, "tools-cluster": true}, false},
+		{"test-1", testClient, map[string]bool{"second": true}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -73,8 +72,7 @@ func TestClient_GetDownstreamClusterVersions(t *testing.T) {
 		want    []clusterVersion
 		wantErr bool
 	}{
-		// TODO: Add test cases.
-		{"test-1", testClient, []clusterVersion{{Name: "nsxt-demo-cluster", Version: "v1.22.10+rke2r2"}, {Name: "tools-cluster", Version: "v1.24.4+rke2r1"}, {Name: "local", Version: "v1.24.4+k3s1"}}, false},
+		{"test-1", testClient, []clusterVersion{{Name: "local", Version: "v1.24.4+k3s1"}, {Name: "second", Version: "v1.24.4+k3s1"}}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
