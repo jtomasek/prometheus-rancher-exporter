@@ -83,4 +83,7 @@ jobs:
         run: go build -v -o ./bin/prometheus-rancher-exporter
 
       - name: Test
-        run: go test -v ./...
+        run: |
+          kubectl config use-context k3d-upstream
+          kubectl version
+          go test -v ./...
