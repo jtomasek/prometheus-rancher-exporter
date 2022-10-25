@@ -11,6 +11,11 @@ jobs:
   build-rancher-env:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
       - name: Install Rancher CLI
         run: |
           # download an older CLI to avoid https://github.com/rancher/rancher/issues/37574
