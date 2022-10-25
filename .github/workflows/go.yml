@@ -49,14 +49,15 @@ jobs:
             --network "nw01"
 
       - name: Set up latest Rancher
-        url: "172.18.0.1.omg.howdoi.website"
-        cluster: "k3d-upstream"
+        env:
+          url: "172.18.0.1.omg.howdoi.website"
+          cluster: "k3d-upstream"
         run: |
           ./.github/scripts/setup-latest-rancher.sh
 
       - name: Register Rancher's downstream clusters
         env:
-        url: "172.18.0.1.omg.howdoi.website"
+          url: "172.18.0.1.omg.howdoi.website"
         run: |
           kubectl config use-context k3d-upstream
           kubectl cluster-info
