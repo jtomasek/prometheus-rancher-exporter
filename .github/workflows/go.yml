@@ -67,6 +67,7 @@ jobs:
           sleep 30
 
   build:
+    needs: build-rancher-env
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
