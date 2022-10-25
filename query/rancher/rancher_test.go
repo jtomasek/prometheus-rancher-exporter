@@ -1,17 +1,44 @@
 package rancher
 
 import (
+	"flag"
+	"fmt"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
+	"os"
+	"os/user"
 	"reflect"
 	"testing"
 )
 
-func TestClient_GetClusterConnectedState(t *testing.T) {
-	type fields struct {
-		Client dynamic.Interface
-		Config *rest.Config
+type fields struct {
+	Client dynamic.Interface
+	Config *rest.Config
+}
+
+var testClient fields
+
+func TestMain(m *testing.M) {
+	currentUser, err := user.Current()
+	if err != nil {
+		log.Fatal(err.Error())
 	}
+
+	kubeconfig := flag.String("kubeconfig", fmt.Sprintf("/home/%s/.kube/config", currentUser.Username), "absolute path to the kubeconfig file")
+	flag.Parse()
+
+	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
+	client, err := dynamic.NewForConfig(config)
+
+	testClient.Client = client
+	testClient.Config = config
+
+	os.Exit(m.Run())
+}
+
+func TestClient_GetClusterConnectedState(t *testing.T) {
 	tests := []struct {
 		name    string
 		fields  fields
@@ -19,6 +46,7 @@ func TestClient_GetClusterConnectedState(t *testing.T) {
 		wantErr bool
 	}{
 		// TODO: Add test cases.
+		{"test-1", testClient, map[string]bool{"nsxt-demo-cluster": true, "tools-cluster": true}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -39,10 +67,6 @@ func TestClient_GetClusterConnectedState(t *testing.T) {
 }
 
 func TestClient_GetDownstreamClusterVersions(t *testing.T) {
-	type fields struct {
-		Client dynamic.Interface
-		Config *rest.Config
-	}
 	tests := []struct {
 		name    string
 		fields  fields
@@ -50,6 +74,7 @@ func TestClient_GetDownstreamClusterVersions(t *testing.T) {
 		wantErr bool
 	}{
 		// TODO: Add test cases.
+		{"test-1", testClient, []clusterVersion{{Name: "nsxt-demo-cluster", Version: "v1.22.10+rke2r2"}, {Name: "tools-cluster", Version: "v1.24.4+rke2r1"}, {Name: "local", Version: "v1.24.4+k3s1"}}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -70,17 +95,13 @@ func TestClient_GetDownstreamClusterVersions(t *testing.T) {
 }
 
 func TestClient_GetInstalledRancherVersion(t *testing.T) {
-	type fields struct {
-		Client dynamic.Interface
-		Config *rest.Config
-	}
 	tests := []struct {
 		name    string
 		fields  fields
 		want    string
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{"test-1", testClient, "v2.6.9", false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -101,17 +122,13 @@ func TestClient_GetInstalledRancherVersion(t *testing.T) {
 }
 
 func TestClient_GetK8sDistributions(t *testing.T) {
-	type fields struct {
-		Client dynamic.Interface
-		Config *rest.Config
-	}
 	tests := []struct {
 		name    string
 		fields  fields
 		want    map[string]int
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{"Test-1", testClient, map[string]int{"k3s": 1, "rke2": 2}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -132,10 +149,6 @@ func TestClient_GetK8sDistributions(t *testing.T) {
 }
 
 func TestClient_GetLatestRancherVersion(t *testing.T) {
-	type fields struct {
-		Client dynamic.Interface
-		Config *rest.Config
-	}
 	tests := []struct {
 		name    string
 		fields  fields
@@ -143,6 +156,7 @@ func TestClient_GetLatestRancherVersion(t *testing.T) {
 		wantErr bool
 	}{
 		// TODO: Add test cases.
+		{"Test-1", testClient, "v2.6.9", false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -163,10 +177,6 @@ func TestClient_GetLatestRancherVersion(t *testing.T) {
 }
 
 func TestClient_GetNumberOfManagedClusters(t *testing.T) {
-	type fields struct {
-		Client dynamic.Interface
-		Config *rest.Config
-	}
 	tests := []struct {
 		name    string
 		fields  fields
@@ -174,6 +184,7 @@ func TestClient_GetNumberOfManagedClusters(t *testing.T) {
 		wantErr bool
 	}{
 		// TODO: Add test cases.
+		{"Test-1", testClient, 3, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -194,10 +205,6 @@ func TestClient_GetNumberOfManagedClusters(t *testing.T) {
 }
 
 func TestClient_GetNumberOfManagedNodes(t *testing.T) {
-	type fields struct {
-		Client dynamic.Interface
-		Config *rest.Config
-	}
 	tests := []struct {
 		name    string
 		fields  fields
@@ -205,6 +212,7 @@ func TestClient_GetNumberOfManagedNodes(t *testing.T) {
 		wantErr bool
 	}{
 		// TODO: Add test cases.
+		{"Test-1", testClient, 7, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -225,10 +233,6 @@ func TestClient_GetNumberOfManagedNodes(t *testing.T) {
 }
 
 func TestClient_GetNumberOfTokens(t *testing.T) {
-	type fields struct {
-		Client dynamic.Interface
-		Config *rest.Config
-	}
 	tests := []struct {
 		name    string
 		fields  fields
@@ -236,6 +240,7 @@ func TestClient_GetNumberOfTokens(t *testing.T) {
 		wantErr bool
 	}{
 		// TODO: Add test cases.
+		{"Test-1", testClient, 23, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -256,17 +261,13 @@ func TestClient_GetNumberOfTokens(t *testing.T) {
 }
 
 func TestClient_GetNumberOfUsers(t *testing.T) {
-	type fields struct {
-		Client dynamic.Interface
-		Config *rest.Config
-	}
 	tests := []struct {
 		name    string
 		fields  fields
 		want    int
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{"Test-1", testClient, 14, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
