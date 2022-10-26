@@ -32,6 +32,7 @@ jobs:
 
       - name: Set up k3d control-plane cluster
         uses: AbsaOSS/k3d-action@v2
+        needs: Set up QEMU
         with:
           cluster-name: "upstream"
           args: >-
