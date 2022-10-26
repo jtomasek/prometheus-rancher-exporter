@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 env:
-  DOWNSTREAM_K3S_VERSION: 'v1.24.7-k3s1'
+  DOWNSTREAM_K3S_VERSION: 'v1.24.6-k3s1'
 
 jobs:
 
@@ -74,7 +74,7 @@ jobs:
           ./.github/scripts/wait-for-loadbalancer.sh
           ./.github/scripts/register-downstream-clusters.sh
           # wait for cluster to settle
-          sleep 60
+          sleep 30
 
       - name: Set up Go
         uses: actions/setup-go@v3
