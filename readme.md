@@ -1,3 +1,5 @@
+![workflow status](https://github.com/David-VTUK/prometheus-rancher-exporter/actions/workflows/test-build-publish.yml/badge.svg)
+
 # Unofficial Prometheus Exporter for Rancher
 
 **Note** : This project is not officially supported by Rancher/Suse.
