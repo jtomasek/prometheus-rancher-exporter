@@ -72,7 +72,7 @@ func TestClient_GetDownstreamClusterVersions(t *testing.T) {
 		want    []clusterVersion
 		wantErr bool
 	}{
-		{"test-1", testClient, []clusterVersion{{Name: "local", Version: "v1.24.4+k3s1"}, {Name: "second", Version: "v1.24.4+k3s1"}}, false},
+		{"test-1", testClient, []clusterVersion{{Name: "local", Version: "v1.24.7+k3s1"}, {Name: "second", Version: "v1.24.7+k3s1"}}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -126,7 +126,7 @@ func TestClient_GetK8sDistributions(t *testing.T) {
 		want    map[string]int
 		wantErr bool
 	}{
-		{"Test-1", testClient, map[string]int{"k3s": 1, "rke2": 2}, false},
+		{"Test-1", testClient, map[string]int{"k3s": 2}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -153,7 +153,6 @@ func TestClient_GetLatestRancherVersion(t *testing.T) {
 		want    string
 		wantErr bool
 	}{
-		// TODO: Add test cases.
 		{"Test-1", testClient, "v2.6.9", false},
 	}
 	for _, tt := range tests {
@@ -182,7 +181,7 @@ func TestClient_GetNumberOfManagedClusters(t *testing.T) {
 		wantErr bool
 	}{
 		// TODO: Add test cases.
-		{"Test-1", testClient, 3, false},
+		{"Test-1", testClient, 2, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -210,7 +209,7 @@ func TestClient_GetNumberOfManagedNodes(t *testing.T) {
 		wantErr bool
 	}{
 		// TODO: Add test cases.
-		{"Test-1", testClient, 7, false},
+		{"Test-1", testClient, 4, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -238,7 +237,7 @@ func TestClient_GetNumberOfTokens(t *testing.T) {
 		wantErr bool
 	}{
 		// TODO: Add test cases.
-		{"Test-1", testClient, 23, false},
+		{"Test-1", testClient, 3, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -265,7 +264,7 @@ func TestClient_GetNumberOfUsers(t *testing.T) {
 		want    int
 		wantErr bool
 	}{
-		{"Test-1", testClient, 14, false},
+		{"Test-1", testClient, 5, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
