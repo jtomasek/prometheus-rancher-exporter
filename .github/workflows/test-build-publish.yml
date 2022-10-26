@@ -74,7 +74,7 @@ jobs:
           ./.github/scripts/wait-for-loadbalancer.sh
           ./.github/scripts/register-downstream-clusters.sh
           # wait for cluster to settle
-          sleep 30
+          sleep 60
 
       - name: Set up Go
         uses: actions/setup-go@v3
