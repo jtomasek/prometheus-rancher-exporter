@@ -72,7 +72,7 @@ func TestClient_GetDownstreamClusterVersions(t *testing.T) {
 		want    []clusterVersion
 		wantErr bool
 	}{
-		{"test-1", testClient, []clusterVersion{{Name: "local", Version: "v1.24.7+k3s1"}, {Name: "second", Version: "v1.24.7+k3s1"}}, false},
+		{"test-1", testClient, []clusterVersion{{Name: "local", Version: "v1.23.10+k3s1"}, {Name: "second", Version: "v1.23.10+k3s1"}}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
