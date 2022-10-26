@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 env:
-  DOWNSTREAM_K3S_VERSION: 'v1.24.4+k3s1'
+  DOWNSTREAM_K3S_VERSION: 'v1.24.7-k3s1'
 
 jobs:
 
