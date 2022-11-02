@@ -76,9 +76,6 @@ jobs:
           # wait for cluster to settle
           sleep 30
 
-      - name: Debug - get cluster yaml
-        run: kubectl get clusters.management.cattle.io -o yaml
-
       - name: Set up Go
         uses: actions/setup-go@v3
         with:
