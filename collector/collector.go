@@ -30,6 +30,10 @@ type metrics struct {
 	// User related
 	tokenCount prometheus.Gauge
 	userCount  prometheus.Gauge
+
+	// Project related
+	projectCount  prometheus.Gauge
+	projectLabels prometheus.GaugeVec
 }
 
 func new() metrics {
@@ -100,6 +104,15 @@ func new() metrics {
 			Name: "rancher_users",
 			Help: "number of users in this Rancher instance",
 		}),
+		projectCount: prometheus.NewGauge(prometheus.GaugeOpts{
+			Name: "rancher_projects",
+			Help: "number of Projects globally",
+		}),
+		projectLabels: *prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Name: "rancher_project_labels",
+			Help: "labels associated with Rancher Projects",
+		}, []string{"project_id", "project_display_name", "project_label_key", "project_label_value"},
+		),
 	}
 
 	prometheus.MustRegister(m.installedRancherVersion)
@@ -120,6 +133,9 @@ func new() metrics {
 	prometheus.MustRegister(m.tokenCount)
 	prometheus.MustRegister(m.userCount)
 
+	prometheus.MustRegister(m.projectCount)
+	prometheus.MustRegister(m.projectLabels)
+
 	m.managedClusterCount.Set(0)
 	m.managedRKEClusterCount.Set(0)
 	m.managedRKE2ClusterCount.Set(0)
@@ -137,6 +153,9 @@ func new() metrics {
 	m.tokenCount.Set(0)
 	m.userCount.Set(0)
 
+	m.projectCount.Set(0)
+	m.projectLabels.Reset()
+
 	return m
 }
 
@@ -144,23 +163,26 @@ func Collect(client rancher.Client) {
 	m := new()
 
 	// GitHub API request limits necessitate polling at a different interval
-	go func() {
-		ticker := time.NewTicker(1 * time.Minute)
+	/*
+		go func() {
+			ticker := time.NewTicker(1 * time.Minute)
 
-		for range ticker.C {
+			for range ticker.C {
 
-			m.latestRancherVersion.Reset()
+				m.latestRancherVersion.Reset()
 
-			latestVers, err := client.GetLatestRancherVersion()
+				latestVers, err := client.GetLatestRancherVersion()
 
-			if err != nil {
-				log.Errorf("error retrieving latest Rancher version: %v", err)
+				if err != nil {
+					log.Errorf("error retrieving latest Rancher version: %v", err)
+				}
+
+				m.latestRancherVersion.WithLabelValues(latestVers).Set(1)
 			}
+		}()
 
-			m.latestRancherVersion.WithLabelValues(latestVers).Set(1)
-		}
-	}()
 
+	*/
 	ticker := time.NewTicker(3 * time.Second)
 
 	for range ticker.C {
@@ -243,6 +265,22 @@ func Collect(client rancher.Client) {
 		}
 
 		m.userCount.Set(float64(users))
+
+		projects, err := client.GetNumberofProjects()
+		if err != nil {
+			log.Errorf("error retrieving number of projects: %v", err)
+		}
+
+		m.projectCount.Set(float64(projects))
+
+		projectLabels, err := client.GetProjectLabels()
+
+		for _, value := range projectLabels {
+
+			// []string{"project_id", "project_display_name", "project_label_key", "project_label_value"},
+			m.projectLabels.WithLabelValues(value.Projectid, value.ProjectDisplayName, value.LabelKey, value.LabelValue)
+
+		}
 
 	}
 
