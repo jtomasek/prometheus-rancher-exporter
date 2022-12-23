@@ -38,6 +38,14 @@ type projectLabel struct {
 	LabelValue         string
 }
 
+type projectAnnotation struct {
+	Projectid          string
+	ProjectDisplayName string
+	ProjectClusterName string
+	AnnotationKey      string
+	AnnotationValue    string
+}
+
 func (r Client) GetInstalledRancherVersion() (string, error) {
 
 	res, err := r.Client.Resource(settingGVR).Get(context.Background(), "server-version", v1.GetOptions{})

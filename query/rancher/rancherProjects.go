@@ -30,7 +30,6 @@ kube_resourcequota{namespace="my_ns1", resource="services.nodeports",resourcequo
 
 import (
 	"context"
-	"fmt"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -68,31 +67,100 @@ func (r Client) GetProjectLabels() ([]projectLabel, error) {
 			return nil, err
 		}
 
-		fmt.Println("test")
+		projectClusterID, _, err := unstructured.NestedString(projectValue.Object, "spec", "clusterName")
+		if err != nil {
+			return nil, err
+		}
 
-		// Loop through array of Labels within each Project
-		for labelKey, labelValue := range projectLabels {
+		projectClusterName, _ := r.clusterIdToName(projectClusterID)
 
-			fmt.Printf("Project Name: %s, Label Key: %s, Label Value: %s", projectDisplayName, labelKey, labelValue)
-			fmt.Println("Test2")
+		if projectClusterName != "" {
+
+			for labelKey, labelValue := range projectLabels {
+
+				project := projectLabel{
+					Projectid:          projectValue.GetName(),
+					ProjectDisplayName: projectDisplayName,
+					ProjectClusterName: projectClusterName,
+					LabelKey:           labelKey,
+					LabelValue:         labelValue,
+				}
+
+				projectLabelsArray = append(projectLabelsArray, project)
+
+			}
 		}
 	}
 	return projectLabelsArray, nil
 }
 
+func (r Client) GetProjectAnnotations() ([]projectAnnotation, error) {
+	res, err := r.Client.Resource(projectsGVR).List(context.Background(), v1.ListOptions{})
+
+	if err != nil {
+		return nil, err
+	}
+
+	var projectAnnotationsArray []projectAnnotation
+
+	// Loop through array of Projects
+	for _, projectValue := range res.Items {
+
+		projectDisplayName, _, err := unstructured.NestedString(projectValue.Object, "spec", "displayName")
+		if err != nil {
+			return nil, err
+		}
+
+		projectClusterID, _, err := unstructured.NestedString(projectValue.Object, "spec", "clusterName")
+		if err != nil {
+			return nil, err
+		}
+
+		projectClusterName, _ := r.clusterIdToName(projectClusterID)
+
+		projectAnnotations := projectValue.GetAnnotations()
+
+		if projectClusterName != "" {
+
+			for annotationKey, annotationValue := range projectAnnotations {
+
+				annotation := projectAnnotation{
+					Projectid:          projectValue.GetName(),
+					ProjectDisplayName: projectDisplayName,
+					ProjectClusterName: projectClusterName,
+					AnnotationKey:      annotationKey,
+					AnnotationValue:    annotationValue,
+				}
+
+				projectAnnotationsArray = append(projectAnnotationsArray, annotation)
+
+			}
+		}
+	}
+	return projectAnnotationsArray, nil
+}
+
 // Projects return the cluster ID (ie c-m-xwf4csvg). Helper function used to lookup the display name
+// as well as it's referencing a valid, existing cluster
 func (r Client) clusterIdToName(id string) (string, error) {
 
+	var clusterName string
+
 	res, err := r.Client.Resource(clusterGVR).Get(context.Background(), id, v1.GetOptions{})
+
 	if err != nil {
 		return "", err
 	}
 
-	clusterName, _, err := unstructured.NestedString(res.Object, "spec", "displayName")
-	if err != nil {
-		return "", err
-	}
+	// Ensure Project is referencing a valid, existing cluster
+	if res != nil {
 
+		clusterName, _, err = unstructured.NestedString(res.Object, "spec", "displayName")
+		if err != nil {
+			return "", err
+		}
+
+	}
 	return clusterName, nil
 
 }

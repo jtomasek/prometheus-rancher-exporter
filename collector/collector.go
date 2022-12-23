@@ -32,8 +32,9 @@ type metrics struct {
 	userCount  prometheus.Gauge
 
 	// Project related
-	projectCount  prometheus.Gauge
-	projectLabels prometheus.GaugeVec
+	projectCount       prometheus.Gauge
+	projectLabels      prometheus.GaugeVec
+	projectAnnotations prometheus.GaugeVec
 }
 
 func new() metrics {
@@ -111,7 +112,12 @@ func new() metrics {
 		projectLabels: *prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Name: "rancher_project_labels",
 			Help: "labels associated with Rancher Projects",
-		}, []string{"project_id", "project_display_name", "project_label_key", "project_label_value"},
+		}, []string{"cluster_name", "project_id", "project_display_name", "project_label_key", "project_label_value"},
+		),
+		projectAnnotations: *prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Name: "rancher_project_annotations",
+			Help: "annotations associated with Rancher Projects",
+		}, []string{"cluster_name", "project_id", "project_display_name", "project_annotation_key", "project_annotation_value"},
 		),
 	}
 
@@ -135,6 +141,7 @@ func new() metrics {
 
 	prometheus.MustRegister(m.projectCount)
 	prometheus.MustRegister(m.projectLabels)
+	prometheus.MustRegister(m.projectAnnotations)
 
 	m.managedClusterCount.Set(0)
 	m.managedRKEClusterCount.Set(0)
@@ -274,12 +281,23 @@ func Collect(client rancher.Client) {
 		m.projectCount.Set(float64(projects))
 
 		projectLabels, err := client.GetProjectLabels()
+		if err != nil {
+			log.Errorf("error retrieving project labels: %v", err)
+		}
 
 		for _, value := range projectLabels {
 
-			// []string{"project_id", "project_display_name", "project_label_key", "project_label_value"},
-			m.projectLabels.WithLabelValues(value.Projectid, value.ProjectDisplayName, value.LabelKey, value.LabelValue)
+			m.projectLabels.WithLabelValues(value.ProjectClusterName, value.Projectid, value.ProjectDisplayName, value.LabelKey, value.LabelValue).Set(1)
 
+		}
+
+		projectAnnotations, err := client.GetProjectAnnotations()
+		if err != nil {
+			log.Errorf("error retrieving project annotations: %v", err)
+		}
+
+		for _, value := range projectAnnotations {
+			m.projectAnnotations.WithLabelValues(value.ProjectClusterName, value.Projectid, value.ProjectDisplayName, value.AnnotationKey, value.AnnotationValue).Set(1)
 		}
 
 	}
