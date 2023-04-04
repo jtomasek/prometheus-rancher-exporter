@@ -35,6 +35,7 @@ type metrics struct {
 	projectCount       prometheus.Gauge
 	projectLabels      prometheus.GaugeVec
 	projectAnnotations prometheus.GaugeVec
+	projectResources   prometheus.GaugeVec
 }
 
 func new() metrics {
@@ -119,6 +120,11 @@ func new() metrics {
 			Help: "annotations associated with Rancher Projects",
 		}, []string{"cluster_name", "project_id", "project_display_name", "project_annotation_key", "project_annotation_value"},
 		),
+		projectResources: *prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Name: "rancher_project_resourcequota",
+			Help: "default namespace resource quota set the for project",
+		}, []string{"cluster_name", "project_id", "project_display_name", "project_resource_key", "project_resource_type"},
+		),
 	}
 
 	prometheus.MustRegister(m.installedRancherVersion)
@@ -142,6 +148,7 @@ func new() metrics {
 	prometheus.MustRegister(m.projectCount)
 	prometheus.MustRegister(m.projectLabels)
 	prometheus.MustRegister(m.projectAnnotations)
+	prometheus.MustRegister(m.projectResources)
 
 	m.managedClusterCount.Set(0)
 	m.managedRKEClusterCount.Set(0)
@@ -300,6 +307,10 @@ func Collect(client rancher.Client) {
 			m.projectAnnotations.WithLabelValues(value.ProjectClusterName, value.Projectid, value.ProjectDisplayName, value.AnnotationKey, value.AnnotationValue).Set(1)
 		}
 
+		projectResources, err := client.GetProjectResourceQuota()
+		for _, value := range projectResources {
+			m.projectResources.WithLabelValues(value.ProjectClusterName, value.Projectid, value.ProjectDisplayName, value.ResourceKey, value.ResourceType).Set(value.ResourceValue)
+		}
 	}
 
 }
