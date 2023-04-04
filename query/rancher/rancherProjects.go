@@ -176,7 +176,7 @@ func (r Client) GetProjectResourceQuota() ([]projectResource, error) {
 
 			for key, value := range projectResourceQuotas {
 
-				//Strip any non numeric values from string
+				//Strip any non-numeric values from string
 				re := regexp.MustCompile("[0-9]+")
 				strippedString := re.FindAllString(value.(string), -1)
 
@@ -206,7 +206,7 @@ func (r Client) GetProjectResourceQuota() ([]projectResource, error) {
 
 			for key, value := range projectResourceQuotas {
 
-				//Strip any non numeric values from string
+				//Strip any non-numeric values from string
 				re := regexp.MustCompile("[0-9]+")
 				strippedString := re.FindAllString(value.(string), -1)
 
