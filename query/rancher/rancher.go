@@ -30,6 +30,31 @@ type clusterVersion struct {
 	Version string
 }
 
+type projectLabel struct {
+	Projectid          string
+	ProjectDisplayName string
+	ProjectClusterName string
+	LabelKey           string
+	LabelValue         string
+}
+
+type projectAnnotation struct {
+	Projectid          string
+	ProjectDisplayName string
+	ProjectClusterName string
+	AnnotationKey      string
+	AnnotationValue    string
+}
+
+type projectResource struct {
+	Projectid          string
+	ProjectDisplayName string
+	ProjectClusterName string
+	ResourceKey        string
+	ResourceValue      float64
+	ResourceType       string
+}
+
 func (r Client) GetInstalledRancherVersion() (string, error) {
 
 	res, err := r.Client.Resource(settingGVR).Get(context.Background(), "server-version", v1.GetOptions{})

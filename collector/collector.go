@@ -30,6 +30,12 @@ type metrics struct {
 	// User related
 	tokenCount prometheus.Gauge
 	userCount  prometheus.Gauge
+
+	// Project related
+	projectCount       prometheus.Gauge
+	projectLabels      prometheus.GaugeVec
+	projectAnnotations prometheus.GaugeVec
+	projectResources   prometheus.GaugeVec
 }
 
 func new() metrics {
@@ -100,6 +106,25 @@ func new() metrics {
 			Name: "rancher_users",
 			Help: "number of users in this Rancher instance",
 		}),
+		projectCount: prometheus.NewGauge(prometheus.GaugeOpts{
+			Name: "rancher_projects",
+			Help: "number of Projects globally",
+		}),
+		projectLabels: *prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Name: "rancher_project_labels",
+			Help: "labels associated with Rancher Projects",
+		}, []string{"cluster_name", "project_id", "project_display_name", "project_label_key", "project_label_value"},
+		),
+		projectAnnotations: *prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Name: "rancher_project_annotations",
+			Help: "annotations associated with Rancher Projects",
+		}, []string{"cluster_name", "project_id", "project_display_name", "project_annotation_key", "project_annotation_value"},
+		),
+		projectResources: *prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Name: "rancher_project_resourcequota",
+			Help: "default namespace resource quota set the for project",
+		}, []string{"cluster_name", "project_id", "project_display_name", "project_resource_key", "project_resource_type"},
+		),
 	}
 
 	prometheus.MustRegister(m.installedRancherVersion)
@@ -120,6 +145,11 @@ func new() metrics {
 	prometheus.MustRegister(m.tokenCount)
 	prometheus.MustRegister(m.userCount)
 
+	prometheus.MustRegister(m.projectCount)
+	prometheus.MustRegister(m.projectLabels)
+	prometheus.MustRegister(m.projectAnnotations)
+	prometheus.MustRegister(m.projectResources)
+
 	m.managedClusterCount.Set(0)
 	m.managedRKEClusterCount.Set(0)
 	m.managedRKE2ClusterCount.Set(0)
@@ -137,6 +167,9 @@ func new() metrics {
 	m.tokenCount.Set(0)
 	m.userCount.Set(0)
 
+	m.projectCount.Set(0)
+	m.projectLabels.Reset()
+
 	return m
 }
 
@@ -144,6 +177,7 @@ func Collect(client rancher.Client) {
 	m := new()
 
 	// GitHub API request limits necessitate polling at a different interval
+
 	go func() {
 		ticker := time.NewTicker(1 * time.Minute)
 
@@ -244,6 +278,37 @@ func Collect(client rancher.Client) {
 
 		m.userCount.Set(float64(users))
 
+		projects, err := client.GetNumberofProjects()
+		if err != nil {
+			log.Errorf("error retrieving number of projects: %v", err)
+		}
+
+		m.projectCount.Set(float64(projects))
+
+		projectLabels, err := client.GetProjectLabels()
+		if err != nil {
+			log.Errorf("error retrieving project labels: %v", err)
+		}
+
+		for _, value := range projectLabels {
+
+			m.projectLabels.WithLabelValues(value.ProjectClusterName, value.Projectid, value.ProjectDisplayName, value.LabelKey, value.LabelValue).Set(1)
+
+		}
+
+		projectAnnotations, err := client.GetProjectAnnotations()
+		if err != nil {
+			log.Errorf("error retrieving project annotations: %v", err)
+		}
+
+		for _, value := range projectAnnotations {
+			m.projectAnnotations.WithLabelValues(value.ProjectClusterName, value.Projectid, value.ProjectDisplayName, value.AnnotationKey, value.AnnotationValue).Set(1)
+		}
+
+		projectResources, err := client.GetProjectResourceQuota()
+		for _, value := range projectResources {
+			m.projectResources.WithLabelValues(value.ProjectClusterName, value.Projectid, value.ProjectDisplayName, value.ResourceKey, value.ResourceType).Set(value.ResourceValue)
+		}
 	}
 
 }
