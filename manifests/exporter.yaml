@@ -10,7 +10,7 @@ metadata:
   name: exporter-role
 rules:
   - apiGroups: ["management.cattle.io"]
-    resources: ["settings","clusters","nodes","tokens","users"]
+    resources: ["settings","clusters","nodes","tokens","users","projects"]
     verbs: ["get", "list"]
 ---
 apiVersion: v1
