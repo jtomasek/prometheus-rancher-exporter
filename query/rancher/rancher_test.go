@@ -237,7 +237,7 @@ func TestClient_GetNumberOfTokens(t *testing.T) {
 		wantErr bool
 	}{
 		// TODO: Add test cases.
-		{"Test-1", testClient, 2, false},
+		{"Test-1", testClient, 3, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -264,7 +264,7 @@ func TestClient_GetNumberOfUsers(t *testing.T) {
 		want    int
 		wantErr bool
 	}{
-		{"Test-1", testClient, 4, false},
+		{"Test-1", testClient, 5, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
