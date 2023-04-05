@@ -177,26 +177,24 @@ func Collect(client rancher.Client) {
 	m := new()
 
 	// GitHub API request limits necessitate polling at a different interval
-	/*
-		go func() {
-			ticker := time.NewTicker(1 * time.Minute)
 
-			for range ticker.C {
+	go func() {
+		ticker := time.NewTicker(1 * time.Minute)
 
-				m.latestRancherVersion.Reset()
+		for range ticker.C {
 
-				latestVers, err := client.GetLatestRancherVersion()
+			m.latestRancherVersion.Reset()
 
-				if err != nil {
-					log.Errorf("error retrieving latest Rancher version: %v", err)
-				}
+			latestVers, err := client.GetLatestRancherVersion()
 
-				m.latestRancherVersion.WithLabelValues(latestVers).Set(1)
+			if err != nil {
+				log.Errorf("error retrieving latest Rancher version: %v", err)
 			}
-		}()
 
+			m.latestRancherVersion.WithLabelValues(latestVers).Set(1)
+		}
+	}()
 
-	*/
 	ticker := time.NewTicker(3 * time.Second)
 
 	for range ticker.C {
