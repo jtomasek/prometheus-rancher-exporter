@@ -17,15 +17,15 @@ func main() {
 
 	// Use this for in-cluster config
 	config, err := rest.InClusterConfig()
+	config.Burst = 50
+	config.QPS = 25
 
 	// Use this for out of cluster config
-
 	/*
 		currentUser, err := user.Current()
 		if err != nil {
 			log.Fatal(err.Error())
 		}
-
 
 		kubeconfig := flag.String("kubeconfig", fmt.Sprintf("/home/%s/.kube/config", currentUser.Username), "absolute path to the kubeconfig file")
 		flag.Parse()

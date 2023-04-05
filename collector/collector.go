@@ -4,6 +4,7 @@ import (
 	"github.com/david-vtuk/prometheus-rancher-exporter/query/rancher"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/log"
+	"sync"
 	"time"
 )
 
@@ -198,119 +199,183 @@ func Collect(client rancher.Client) {
 	ticker := time.NewTicker(3 * time.Second)
 
 	for range ticker.C {
+		start := time.Now()
 		log.Info("updating rancher metrics")
 
 		resetGaugeMetrics(m)
 
-		installedVersion, err := client.GetInstalledRancherVersion()
-		if err != nil {
-			return
-		}
+		var wg sync.WaitGroup
+		wg.Add(12)
 
-		state, err := client.GetClusterConnectedState()
-		if err != nil {
-			return
-		}
+		go getInstalledRancherVersion(client, m, &wg)
+		go getClusterConnectedState(client, m, &wg)
+		go getNumberOfClusters(client, m, &wg)
+		go getDistributions(client, m, &wg)
+		go getNumberOfNodes(client, m, &wg)
+		go getDownstreamClusterVersions(client, m, &wg)
+		go getNumberOfTokens(client, m, &wg)
+		go getNumberOfUsers(client, m, &wg)
+		go getNumberOfProjects(client, m, &wg)
+		go getProjectLabels(client, m, &wg)
+		go getProjectAnnotations(client, m, &wg)
+		go getProjectResources(client, m, &wg)
 
-		numberOfClusters, err := client.GetNumberOfManagedClusters()
+		wg.Wait()
 
-		if err != nil {
-			log.Errorf("error retrieving number of managed clusters: %v", err)
-		}
-
-		distributions, err := client.GetK8sDistributions()
-
-		if err != nil {
-			log.Errorf("error retrieving number of managed clusters: %v", err)
-		}
-
-		numberOfNodes, err := client.GetNumberOfManagedNodes()
-
-		if err != nil {
-			log.Errorf("error retrieving number of managed nodes: %v", err)
-		}
-
-		downstreamClusterVersions, err := client.GetDownstreamClusterVersions()
-
-		if err != nil {
-			log.Errorf("error retrieving downstream k8s cluster versions: %v", err)
-		}
-
-		m.installedRancherVersion.WithLabelValues(installedVersion).Set(1)
-
-		for _, value := range downstreamClusterVersions {
-
-			m.downstreamClusterVersion.WithLabelValues(value.Name, value.Version).Set(1)
-
-		}
-
-		m.managedClusterCount.Set(float64(numberOfClusters))
-		m.managedNodeCount.Set(float64(numberOfNodes))
-
-		m.managedRKEClusterCount.Set(float64(distributions["rke"]))
-		m.managedRKE2ClusterCount.Set(float64(distributions["rke2"]))
-		m.managedK3sClusterCount.Set(float64(distributions["k3s"]))
-		m.managedEKSClusterCount.Set(float64(distributions["eks"]))
-		m.managedAKSClusterCount.Set(float64(distributions["aks"]))
-		m.managedGKEClusterCount.Set(float64(distributions["gke"]))
-
-		for key, value := range state {
-			if value == true {
-				m.clusterConditionConnected.WithLabelValues(key).Set(1)
-				m.clusterConditionNotConnected.WithLabelValues(key).Set(0)
-			} else {
-				m.clusterConditionNotConnected.WithLabelValues(key).Set(1)
-				m.clusterConditionConnected.WithLabelValues(key).Set(0)
-			}
-		}
-
-		tokens, err := client.GetNumberOfTokens()
-		if err != nil {
-			log.Errorf("error retrieving number of tokens: %v", err)
-		}
-
-		m.tokenCount.Set(float64(tokens))
-
-		users, err := client.GetNumberOfUsers()
-		if err != nil {
-			log.Errorf("error retrieving number of users: %v", err)
-		}
-
-		m.userCount.Set(float64(users))
-
-		projects, err := client.GetNumberofProjects()
-		if err != nil {
-			log.Errorf("error retrieving number of projects: %v", err)
-		}
-
-		m.projectCount.Set(float64(projects))
-
-		projectLabels, err := client.GetProjectLabels()
-		if err != nil {
-			log.Errorf("error retrieving project labels: %v", err)
-		}
-
-		for _, value := range projectLabels {
-
-			m.projectLabels.WithLabelValues(value.ProjectClusterName, value.Projectid, value.ProjectDisplayName, value.LabelKey, value.LabelValue).Set(1)
-
-		}
-
-		projectAnnotations, err := client.GetProjectAnnotations()
-		if err != nil {
-			log.Errorf("error retrieving project annotations: %v", err)
-		}
-
-		for _, value := range projectAnnotations {
-			m.projectAnnotations.WithLabelValues(value.ProjectClusterName, value.Projectid, value.ProjectDisplayName, value.AnnotationKey, value.AnnotationValue).Set(1)
-		}
-
-		projectResources, err := client.GetProjectResourceQuota()
-		for _, value := range projectResources {
-			m.projectResources.WithLabelValues(value.ProjectClusterName, value.Projectid, value.ProjectDisplayName, value.ResourceKey, value.ResourceType).Set(value.ResourceValue)
-		}
+		elapsed := time.Since(start)
+		log.Infof("metric collection took %s", elapsed)
 	}
 
+}
+
+func getInstalledRancherVersion(client rancher.Client, m metrics, wg *sync.WaitGroup) {
+
+	installedVersion, err := client.GetInstalledRancherVersion()
+	if err != nil {
+		log.Errorf("error retrieving the installed Rancher version: %v", err)
+	}
+	m.installedRancherVersion.WithLabelValues(installedVersion).Set(1)
+	wg.Done()
+}
+
+func getClusterConnectedState(client rancher.Client, m metrics, wg *sync.WaitGroup) {
+	state, err := client.GetClusterConnectedState()
+	if err != nil {
+		log.Errorf("error retrieving cluster connected states: %v", err)
+	}
+	for key, value := range state {
+		if value == true {
+			m.clusterConditionConnected.WithLabelValues(key).Set(1)
+			m.clusterConditionNotConnected.WithLabelValues(key).Set(0)
+		} else {
+			m.clusterConditionNotConnected.WithLabelValues(key).Set(1)
+			m.clusterConditionConnected.WithLabelValues(key).Set(0)
+		}
+	}
+	wg.Done()
+}
+
+func getNumberOfClusters(client rancher.Client, m metrics, wg *sync.WaitGroup) {
+	numberOfClusters, err := client.GetNumberOfManagedClusters()
+
+	if err != nil {
+		log.Errorf("error retrieving number of managed clusters: %v", err)
+	}
+	m.managedClusterCount.Set(float64(numberOfClusters))
+	wg.Done()
+}
+
+func getDistributions(client rancher.Client, m metrics, wg *sync.WaitGroup) {
+	distributions, err := client.GetK8sDistributions()
+	if err != nil {
+		log.Errorf("error retrieving cluster k8s distributions: %v", err)
+	}
+	m.managedRKEClusterCount.Set(float64(distributions["rke"]))
+	m.managedRKE2ClusterCount.Set(float64(distributions["rke2"]))
+	m.managedK3sClusterCount.Set(float64(distributions["k3s"]))
+	m.managedEKSClusterCount.Set(float64(distributions["eks"]))
+	m.managedAKSClusterCount.Set(float64(distributions["aks"]))
+	m.managedGKEClusterCount.Set(float64(distributions["gke"]))
+
+	wg.Done()
+}
+
+func getNumberOfNodes(client rancher.Client, m metrics, wg *sync.WaitGroup) {
+	numberOfNodes, err := client.GetNumberOfManagedNodes()
+
+	if err != nil {
+		log.Errorf("error retrieving number of managed nodes: %v", err)
+	}
+
+	m.managedNodeCount.Set(float64(numberOfNodes))
+
+	wg.Done()
+}
+
+func getDownstreamClusterVersions(client rancher.Client, m metrics, wg *sync.WaitGroup) {
+	downstreamClusterVersions, err := client.GetDownstreamClusterVersions()
+
+	if err != nil {
+		log.Errorf("error retrieving downstream k8s cluster versions: %v", err)
+	}
+
+	for _, value := range downstreamClusterVersions {
+
+		m.downstreamClusterVersion.WithLabelValues(value.Name, value.Version).Set(1)
+	}
+
+	wg.Done()
+}
+
+func getNumberOfUsers(client rancher.Client, m metrics, wg *sync.WaitGroup) {
+	users, err := client.GetNumberOfUsers()
+	if err != nil {
+		log.Errorf("error retrieving number of users: %v", err)
+	}
+
+	m.userCount.Set(float64(users))
+
+	wg.Done()
+}
+
+func getNumberOfTokens(client rancher.Client, m metrics, wg *sync.WaitGroup) {
+	tokens, err := client.GetNumberOfTokens()
+	if err != nil {
+		log.Errorf("error retrieving number of tokens: %v", err)
+	}
+
+	m.tokenCount.Set(float64(tokens))
+	wg.Done()
+}
+
+func getNumberOfProjects(client rancher.Client, m metrics, wg *sync.WaitGroup) {
+	projects, err := client.GetNumberofProjects()
+	if err != nil {
+		log.Errorf("error retrieving number of projects: %v", err)
+	}
+
+	m.projectCount.Set(float64(projects))
+
+	wg.Done()
+}
+
+func getProjectLabels(client rancher.Client, m metrics, wg *sync.WaitGroup) {
+	projectLabels, err := client.GetProjectLabels()
+	if err != nil {
+		log.Errorf("error retrieving project labels: %v", err)
+	}
+
+	for _, value := range projectLabels {
+
+		m.projectLabels.WithLabelValues(value.ProjectClusterName, value.Projectid, value.ProjectDisplayName, value.LabelKey, value.LabelValue).Set(1)
+
+	}
+
+	wg.Done()
+}
+
+func getProjectAnnotations(client rancher.Client, m metrics, wg *sync.WaitGroup) {
+	projectAnnotations, err := client.GetProjectAnnotations()
+	if err != nil {
+		log.Errorf("error retrieving project annotations: %v", err)
+	}
+
+	for _, value := range projectAnnotations {
+		m.projectAnnotations.WithLabelValues(value.ProjectClusterName, value.Projectid, value.ProjectDisplayName, value.AnnotationKey, value.AnnotationValue).Set(1)
+	}
+
+	wg.Done()
+}
+
+func getProjectResources(client rancher.Client, m metrics, wg *sync.WaitGroup) {
+	projectResources, err := client.GetProjectResourceQuota()
+	if err != nil {
+		log.Errorf("error retrieving project resources: %v", err)
+	}
+	for _, value := range projectResources {
+		m.projectResources.WithLabelValues(value.ProjectClusterName, value.Projectid, value.ProjectDisplayName, value.ResourceKey, value.ResourceType).Set(value.ResourceValue)
+	}
+	wg.Done()
 }
 
 // Reset GaugeVecs on each tick - facilitate state transition
