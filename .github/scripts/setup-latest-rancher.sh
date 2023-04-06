@@ -28,3 +28,23 @@ kubectl -n cattle-system rollout status deploy/rancher
 kubectl -n cattle-fleet-system rollout status deploy/fleet-controller
 
 helm list -A
+
+kubectl apply -f - <<EOF
+apiVersion: management.cattle.io/v3
+kind: Project
+metadata:
+  labels:
+    cattle.io/creator: norman
+  namespace: default
+  name: ci-project
+spec:
+  clusterName: local
+  displayName: ci-project
+  namespaceDefaultResourceQuota:
+    limit:
+      configMaps: '10'
+  resourceQuota:
+    limit:
+      configMaps: '1000'
+    usedLimit: {}
+EOF
