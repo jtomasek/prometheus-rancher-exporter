@@ -47,7 +47,7 @@ kind: Project
 metadata:
   labels:
     cattle.io/creator: norman
-  namespace: local
+  namespace: default
   name: ci-project
 spec:
   clusterName: local
