@@ -1,0 +1,87 @@
+# This workflow will build a golang project
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
+
+name: Test
+
+on:
+  workflow_dispatch:
+
+env:
+  DOWNSTREAM_K3S_VERSION: 'v1.23.10-k3s1'
+
+jobs:
+
+  run-e2e-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Install Rancher CLI
+        run: |
+          # download an older CLI to avoid https://github.com/rancher/rancher/issues/37574
+          mkdir -p /home/runner/.local/bin
+          wget -q https://github.com/rancher/cli/releases/download/v2.6.0/rancher-linux-amd64-v2.6.0.tar.gz
+          tar -xz --strip-components=2 -f rancher-linux-amd64-v2.6.0.tar.gz -C /home/runner/.local/bin
+          rancher --version
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Set up k3d control-plane cluster
+        uses: AbsaOSS/k3d-action@v2
+        with:
+          cluster-name: "upstream"
+          args: >-
+            -p "80:80@agent:0:direct"
+            -p "443:443@agent:0:direct"
+            --image docker.io/rancher/k3s:${{ env.DOWNSTREAM_K3S_VERSION }}
+            --api-port 6443
+            --agents 1
+            --k3s-arg '--kubelet-arg=eviction-hard=imagefs.available<1%,nodefs.available<1%@agent:*'
+            --k3s-arg '--kubelet-arg=eviction-minimum-reclaim=imagefs.available=1%,nodefs.available=1%@agent:*'
+            --network "nw01"
+
+      - name: Set up k3d downstream cluster
+        uses: AbsaOSS/k3d-action@v2
+        with:
+          cluster-name: "downstream"
+          args: >-
+            -p "81:80@agent:0:direct"
+            -p "444:443@agent:0:direct"
+            --image docker.io/rancher/k3s:${{ env.DOWNSTREAM_K3S_VERSION }}
+            --api-port 6644
+            --agents 1
+            --k3s-arg '--kubelet-arg=eviction-hard=imagefs.available<1%,nodefs.available<1%@agent:*'
+            --k3s-arg '--kubelet-arg=eviction-minimum-reclaim=imagefs.available=1%,nodefs.available=1%@agent:*'
+            --network "nw01"
+
+      - name: Set up latest Rancher
+        env:
+          url: "172.18.0.1.omg.howdoi.website"
+          cluster: "k3d-upstream"
+        run: |
+          ./.github/scripts/setup-latest-rancher.sh
+
+      - name: Register Rancher's downstream clusters
+        env:
+          url: "172.18.0.1.omg.howdoi.website"
+        run: |
+          kubectl config use-context k3d-upstream
+          kubectl cluster-info
+          ./.github/scripts/wait-for-loadbalancer.sh
+          ./.github/scripts/register-downstream-clusters.sh
+          # wait for cluster to settle
+          sleep 30
+
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.18
+
+      - name: Run Go tests
+        run: |
+          kubectl config use-context k3d-upstream
+          go test -v ./...
