@@ -39,6 +39,8 @@ userPrincipal:
   provider: local
 EOF
 
+echo -e "4\n" | rancher login "https://$url" --token "$token" --skip-verify
+
 kubectl apply -f - <<EOF
 apiVersion: management.cattle.io/v3
 kind: Project
@@ -58,8 +60,6 @@ spec:
       configMaps: '1000'
     usedLimit: {}
 EOF
-
-echo -e "4\n" | rancher login "https://$url" --token "$token" --skip-verify
 
 rancher clusters create second --import
 
