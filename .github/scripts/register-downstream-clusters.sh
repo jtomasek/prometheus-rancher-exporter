@@ -44,7 +44,6 @@ echo -e "4\n" | rancher login "https://$url" --token "$token" --skip-verify
 rancher clusters create second --import
 
 kubectl config use-context "$cluster_downstream"
-
 rancher cluster import second
 rancher cluster import second | grep curl | sh
 
