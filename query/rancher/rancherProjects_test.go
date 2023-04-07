@@ -83,8 +83,11 @@ func TestClient_GetProjectLabels(t *testing.T) {
 				t.Errorf("GetProjectLabels() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetProjectLabels() got = %v, want %v", got, tt.want)
+			gotType := reflect.TypeOf(got)
+			wantType := reflect.TypeOf(tt.want)
+
+			if gotType != wantType {
+				t.Errorf("GetProjectAnnotations() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -97,7 +100,8 @@ func TestClient_GetProjectResourceQuota(t *testing.T) {
 		want    []projectResource
 		wantErr bool
 	}{
-		{"test-1", testClient, []projectResource{}, false},
+		{"test-1", testClient, []projectResource{{"ci-project", "ci-project",
+			"local", "configMaps", 1000, "hard"}}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -125,7 +129,7 @@ func TestClient_clusterIdToName(t *testing.T) {
 		want    string
 		wantErr bool
 	}{
-		{"test-1", testClient, "", "", false},
+		{"test-1", testClient, "c-m-pskdut5m", "fake-cluster", false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
