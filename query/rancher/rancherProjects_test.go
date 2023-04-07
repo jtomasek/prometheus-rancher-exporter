@@ -36,10 +36,10 @@ func TestClient_GetProjectAnnotations(t *testing.T) {
 	tests := []struct {
 		name    string
 		fields  fields
-		want    []projectAnnotation
+		want    int
 		wantErr bool
 	}{
-		{"test-1", testClient, []projectAnnotation{}, false},
+		{"test-1", testClient, 1, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -53,10 +53,7 @@ func TestClient_GetProjectAnnotations(t *testing.T) {
 				t.Errorf("GetProjectAnnotations() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			gotType := reflect.TypeOf(got)
-			wantType := reflect.TypeOf(tt.want)
-
-			if gotType != wantType {
+			if len(got) < tt.want {
 				t.Errorf("GetProjectAnnotations() got = %v, want %v", got, tt.want)
 			}
 		})
@@ -67,10 +64,10 @@ func TestClient_GetProjectLabels(t *testing.T) {
 	tests := []struct {
 		name    string
 		fields  fields
-		want    []projectLabel
+		want    int
 		wantErr bool
 	}{
-		{"test-1", testClient, []projectLabel{}, false},
+		{"test-1", testClient, 1, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -83,10 +80,7 @@ func TestClient_GetProjectLabels(t *testing.T) {
 				t.Errorf("GetProjectLabels() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			gotType := reflect.TypeOf(got)
-			wantType := reflect.TypeOf(tt.want)
-
-			if gotType != wantType {
+			if len(got) < tt.want {
 				t.Errorf("GetProjectAnnotations() got = %v, want %v", got, tt.want)
 			}
 		})
