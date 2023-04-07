@@ -199,6 +199,7 @@ func Collect(client rancher.Client) {
 
 	for range ticker.C {
 
+		resetGaugeVecMetrics(m)
 		log.Info("updating rancher metrics")
 
 		go getInstalledRancherVersion(client, m)
@@ -351,4 +352,16 @@ func getProjectResources(client rancher.Client, m metrics) {
 	for _, value := range projectResources {
 		m.projectResources.WithLabelValues(value.ProjectClusterName, value.Projectid, value.ProjectDisplayName, value.ResourceKey, value.ResourceType).Set(value.ResourceValue)
 	}
+}
+
+// Reset GaugeVecs on each tick - facilitate state transition
+func resetGaugeVecMetrics(m metrics) {
+	m.installedRancherVersion.Reset()
+	m.latestRancherVersion.Reset()
+	m.clusterConditionConnected.Reset()
+	m.clusterConditionNotConnected.Reset()
+	m.downstreamClusterVersion.Reset()
+	m.projectLabels.Reset()
+	m.projectAnnotations.Reset()
+	m.projectResources.Reset()
 }
