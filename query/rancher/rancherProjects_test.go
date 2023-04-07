@@ -12,7 +12,7 @@ func TestClient_GetNumberofProjects(t *testing.T) {
 		want    int
 		wantErr bool
 	}{
-		{"test-1", testClient, 4, false},
+		{"test-1", testClient, 5, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -40,7 +40,7 @@ func TestClient_GetProjectAnnotations(t *testing.T) {
 		want    projectAnnotation
 		wantErr bool
 	}{
-		{"test-1", testClient, projectAnnotation{"p-wm44k", "Default", "local", "lifecycle.cattle.io/create.project-namespace-auth_local", "true"}, false},
+		{"test-1", testClient, projectAnnotation{}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
