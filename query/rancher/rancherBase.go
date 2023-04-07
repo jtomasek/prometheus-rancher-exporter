@@ -10,6 +10,7 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
 	"net/http"
+	"net"
 )
 
 var (
@@ -98,6 +99,12 @@ func (r Client) GetK8sDistributions() (map[string]int, error) {
 }
 
 func (r Client) GetLatestRancherVersion() (string, error) {
+
+	// check dns resultion first, if this fails http.Get segfaults
+	_, err := net.LookupHost("api.github.com")
+	if err != nil {
+	  return "no internet", nil
+        }
 	resp, err := http.Get("https://api.github.com/repos/rancher/rancher/releases/latest")
 
 	defer resp.Body.Close()
