@@ -4,7 +4,6 @@ import (
 	"github.com/david-vtuk/prometheus-rancher-exporter/query/rancher"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/log"
-	"sync"
 	"time"
 )
 
@@ -199,46 +198,40 @@ func Collect(client rancher.Client) {
 	ticker := time.NewTicker(3 * time.Second)
 
 	for range ticker.C {
-		start := time.Now()
+
 		log.Info("updating rancher metrics")
 
-		resetGaugeMetrics(m)
-
-		var wg sync.WaitGroup
-		wg.Add(12)
-
-		go getInstalledRancherVersion(client, m, &wg)
-		go getClusterConnectedState(client, m, &wg)
-		go getNumberOfClusters(client, m, &wg)
-		go getDistributions(client, m, &wg)
-		go getNumberOfNodes(client, m, &wg)
-		go getDownstreamClusterVersions(client, m, &wg)
-		go getNumberOfTokens(client, m, &wg)
-		go getNumberOfUsers(client, m, &wg)
-		go getNumberOfProjects(client, m, &wg)
-		go getProjectLabels(client, m, &wg)
-		go getProjectAnnotations(client, m, &wg)
-		go getProjectResources(client, m, &wg)
-
-		wg.Wait()
-
-		elapsed := time.Since(start)
-		log.Infof("metric collection took %s", elapsed)
+		go getInstalledRancherVersion(client, m)
+		go getClusterConnectedState(client, m)
+		go getNumberOfClusters(client, m)
+		go getDistributions(client, m)
+		go getNumberOfNodes(client, m)
+		go getDownstreamClusterVersions(client, m)
+		go getNumberOfTokens(client, m)
+		go getNumberOfUsers(client, m)
+		go getNumberOfProjects(client, m)
+		go getProjectLabels(client, m)
+		go getProjectAnnotations(client, m)
+		go getProjectResources(client, m)
 	}
 
 }
 
-func getInstalledRancherVersion(client rancher.Client, m metrics, wg *sync.WaitGroup) {
+func getInstalledRancherVersion(client rancher.Client, m metrics) {
+
+	start := time.Now()
 
 	installedVersion, err := client.GetInstalledRancherVersion()
 	if err != nil {
 		log.Errorf("error retrieving the installed Rancher version: %v", err)
 	}
 	m.installedRancherVersion.WithLabelValues(installedVersion).Set(1)
-	wg.Done()
+
+	elapsed := time.Since(start)
+	log.Debugf("getInstalledRancherVersion metric collection took %s", elapsed)
 }
 
-func getClusterConnectedState(client rancher.Client, m metrics, wg *sync.WaitGroup) {
+func getClusterConnectedState(client rancher.Client, m metrics) {
 	state, err := client.GetClusterConnectedState()
 	if err != nil {
 		log.Errorf("error retrieving cluster connected states: %v", err)
@@ -252,20 +245,18 @@ func getClusterConnectedState(client rancher.Client, m metrics, wg *sync.WaitGro
 			m.clusterConditionConnected.WithLabelValues(key).Set(0)
 		}
 	}
-	wg.Done()
 }
 
-func getNumberOfClusters(client rancher.Client, m metrics, wg *sync.WaitGroup) {
+func getNumberOfClusters(client rancher.Client, m metrics) {
 	numberOfClusters, err := client.GetNumberOfManagedClusters()
 
 	if err != nil {
 		log.Errorf("error retrieving number of managed clusters: %v", err)
 	}
 	m.managedClusterCount.Set(float64(numberOfClusters))
-	wg.Done()
 }
 
-func getDistributions(client rancher.Client, m metrics, wg *sync.WaitGroup) {
+func getDistributions(client rancher.Client, m metrics) {
 	distributions, err := client.GetK8sDistributions()
 	if err != nil {
 		log.Errorf("error retrieving cluster k8s distributions: %v", err)
@@ -276,11 +267,9 @@ func getDistributions(client rancher.Client, m metrics, wg *sync.WaitGroup) {
 	m.managedEKSClusterCount.Set(float64(distributions["eks"]))
 	m.managedAKSClusterCount.Set(float64(distributions["aks"]))
 	m.managedGKEClusterCount.Set(float64(distributions["gke"]))
-
-	wg.Done()
 }
 
-func getNumberOfNodes(client rancher.Client, m metrics, wg *sync.WaitGroup) {
+func getNumberOfNodes(client rancher.Client, m metrics) {
 	numberOfNodes, err := client.GetNumberOfManagedNodes()
 
 	if err != nil {
@@ -288,11 +277,9 @@ func getNumberOfNodes(client rancher.Client, m metrics, wg *sync.WaitGroup) {
 	}
 
 	m.managedNodeCount.Set(float64(numberOfNodes))
-
-	wg.Done()
 }
 
-func getDownstreamClusterVersions(client rancher.Client, m metrics, wg *sync.WaitGroup) {
+func getDownstreamClusterVersions(client rancher.Client, m metrics) {
 	downstreamClusterVersions, err := client.GetDownstreamClusterVersions()
 
 	if err != nil {
@@ -303,43 +290,36 @@ func getDownstreamClusterVersions(client rancher.Client, m metrics, wg *sync.Wai
 
 		m.downstreamClusterVersion.WithLabelValues(value.Name, value.Version).Set(1)
 	}
-
-	wg.Done()
 }
 
-func getNumberOfUsers(client rancher.Client, m metrics, wg *sync.WaitGroup) {
+func getNumberOfUsers(client rancher.Client, m metrics) {
 	users, err := client.GetNumberOfUsers()
 	if err != nil {
 		log.Errorf("error retrieving number of users: %v", err)
 	}
 
 	m.userCount.Set(float64(users))
-
-	wg.Done()
 }
 
-func getNumberOfTokens(client rancher.Client, m metrics, wg *sync.WaitGroup) {
+func getNumberOfTokens(client rancher.Client, m metrics) {
 	tokens, err := client.GetNumberOfTokens()
 	if err != nil {
 		log.Errorf("error retrieving number of tokens: %v", err)
 	}
 
 	m.tokenCount.Set(float64(tokens))
-	wg.Done()
 }
 
-func getNumberOfProjects(client rancher.Client, m metrics, wg *sync.WaitGroup) {
+func getNumberOfProjects(client rancher.Client, m metrics) {
 	projects, err := client.GetNumberofProjects()
 	if err != nil {
 		log.Errorf("error retrieving number of projects: %v", err)
 	}
 
 	m.projectCount.Set(float64(projects))
-
-	wg.Done()
 }
 
-func getProjectLabels(client rancher.Client, m metrics, wg *sync.WaitGroup) {
+func getProjectLabels(client rancher.Client, m metrics) {
 	projectLabels, err := client.GetProjectLabels()
 	if err != nil {
 		log.Errorf("error retrieving project labels: %v", err)
@@ -350,11 +330,9 @@ func getProjectLabels(client rancher.Client, m metrics, wg *sync.WaitGroup) {
 		m.projectLabels.WithLabelValues(value.ProjectClusterName, value.Projectid, value.ProjectDisplayName, value.LabelKey, value.LabelValue).Set(1)
 
 	}
-
-	wg.Done()
 }
 
-func getProjectAnnotations(client rancher.Client, m metrics, wg *sync.WaitGroup) {
+func getProjectAnnotations(client rancher.Client, m metrics) {
 	projectAnnotations, err := client.GetProjectAnnotations()
 	if err != nil {
 		log.Errorf("error retrieving project annotations: %v", err)
@@ -363,11 +341,9 @@ func getProjectAnnotations(client rancher.Client, m metrics, wg *sync.WaitGroup)
 	for _, value := range projectAnnotations {
 		m.projectAnnotations.WithLabelValues(value.ProjectClusterName, value.Projectid, value.ProjectDisplayName, value.AnnotationKey, value.AnnotationValue).Set(1)
 	}
-
-	wg.Done()
 }
 
-func getProjectResources(client rancher.Client, m metrics, wg *sync.WaitGroup) {
+func getProjectResources(client rancher.Client, m metrics) {
 	projectResources, err := client.GetProjectResourceQuota()
 	if err != nil {
 		log.Errorf("error retrieving project resources: %v", err)
@@ -375,14 +351,4 @@ func getProjectResources(client rancher.Client, m metrics, wg *sync.WaitGroup) {
 	for _, value := range projectResources {
 		m.projectResources.WithLabelValues(value.ProjectClusterName, value.Projectid, value.ProjectDisplayName, value.ResourceKey, value.ResourceType).Set(value.ResourceValue)
 	}
-	wg.Done()
-}
-
-// Reset GaugeVecs on each tick - facilitate state transition
-func resetGaugeMetrics(m metrics) {
-
-	m.downstreamClusterVersion.Reset()
-	m.clusterConditionNotConnected.Reset()
-	m.clusterConditionConnected.Reset()
-	m.installedRancherVersion.Reset()
 }
