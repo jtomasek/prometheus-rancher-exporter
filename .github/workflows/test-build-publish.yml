@@ -82,6 +82,8 @@ jobs:
       - name: Add fake cluster
         run : ./.github/scripts/create-fake-cluster.sh
 
+      - name: Wait for env to settle
+        run : sleep 60
 
       - name: Set up Go
         uses: actions/setup-go@v3
