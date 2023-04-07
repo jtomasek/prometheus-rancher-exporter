@@ -45,7 +45,7 @@ func TestClient_GetClusterConnectedState(t *testing.T) {
 		want    map[string]bool
 		wantErr bool
 	}{
-		{"test-1", testClient, map[string]bool{"second": true}, false},
+		{"test-1", testClient, map[string]bool{"fake-cluster": false, "second": true}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -126,7 +126,7 @@ func TestClient_GetK8sDistributions(t *testing.T) {
 		want    map[string]int
 		wantErr bool
 	}{
-		{"Test-1", testClient, map[string]int{"k3s": 2}, false},
+		{"Test-1", testClient, map[string]int{"k3s": 3}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -181,7 +181,7 @@ func TestClient_GetNumberOfManagedClusters(t *testing.T) {
 		wantErr bool
 	}{
 		// TODO: Add test cases.
-		{"Test-1", testClient, 2, false},
+		{"Test-1", testClient, 3, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
