@@ -1,7 +1,6 @@
 #!/usr/bin/bash
 
 kubectl config use-context k3d-upstream
-
 kubectl apply -f - <<EOF
 apiVersion: management.cattle.io/v3
 kind: Project
