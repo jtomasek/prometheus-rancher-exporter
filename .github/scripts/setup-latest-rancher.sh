@@ -38,7 +38,7 @@ metadata:
   namespace: default
   name: ci-project
 spec:
-  clusterName: local
+  clusterName: project-test-cluster
   displayName: ci-project
   namespaceDefaultResourceQuota:
     limit:
