@@ -10,29 +10,40 @@ import (
 	"net/http"
 )
 
+const (
+	k8sClientBurst = 50
+	k8sClientQPS   = 25
+)
+
 func main() {
 
 	// Build Rancher Client
 	log.Info("Building Rancher Client")
 
 	// Use this for in-cluster config
+
 	config, err := rest.InClusterConfig()
+	config.Burst = k8sClientBurst
+	config.QPS = k8sClientQPS
+	if err != nil {
+		log.Fatal("Unable to construct REST client")
+	}
 
 	// Use this for out of cluster config
-
 	/*
 		currentUser, err := user.Current()
 		if err != nil {
 			log.Fatal(err.Error())
 		}
 
-
 		kubeconfig := flag.String("kubeconfig", fmt.Sprintf("/home/%s/.kube/config", currentUser.Username), "absolute path to the kubeconfig file")
 		flag.Parse()
 		config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
-
+		config.Burst = k8sClientBurst
+		config.QPS = k8sClientQPS
 
 	*/
+
 	if err != nil {
 		log.Fatal("Unable to construct Rancher client Config")
 	}

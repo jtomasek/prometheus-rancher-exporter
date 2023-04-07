@@ -150,7 +150,7 @@ func (r Client) GetClusterConnectedState() (map[string]bool, error) {
 
 			clusterStatus[clusterName] = false
 
-			// Grab status.conditions slide from object
+			// Grab status.conditions slice from object
 			statusSlice, _, _ := unstructured.NestedSlice(cluster.Object, "status", "conditions")
 
 			// Iterate through each status slice to determine if cluster is connected
