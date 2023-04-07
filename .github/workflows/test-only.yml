@@ -76,6 +76,9 @@ jobs:
           # wait for cluster to settle
           sleep 30
 
+      - name: Add test Project
+        run : ./.github/scripts/create-project.sh
+
       - name: Set up Go
         uses: actions/setup-go@v3
         with:
