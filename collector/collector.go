@@ -357,7 +357,6 @@ func getProjectResources(client rancher.Client, m metrics) {
 // Reset GaugeVecs on each tick - facilitate state transition
 func resetGaugeVecMetrics(m metrics) {
 	m.installedRancherVersion.Reset()
-	m.latestRancherVersion.Reset()
 	m.clusterConditionConnected.Reset()
 	m.clusterConditionNotConnected.Reset()
 	m.downstreamClusterVersion.Reset()
