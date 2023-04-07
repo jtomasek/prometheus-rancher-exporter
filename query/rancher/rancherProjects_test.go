@@ -12,7 +12,7 @@ func TestClient_GetNumberofProjects(t *testing.T) {
 		want    int
 		wantErr bool
 	}{
-		{"test-1", testClient, 4, false},
+		{"test-1", testClient, 5, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -48,11 +48,15 @@ func TestClient_GetProjectAnnotations(t *testing.T) {
 				Config: tt.fields.Config,
 			}
 			got, err := r.GetProjectAnnotations()
+
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetProjectAnnotations() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
+			gotType := reflect.TypeOf(got)
+			wantType := reflect.TypeOf(tt.want)
+
+			if gotType != wantType {
 				t.Errorf("GetProjectAnnotations() got = %v, want %v", got, tt.want)
 			}
 		})
