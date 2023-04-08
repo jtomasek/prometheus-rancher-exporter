@@ -14,8 +14,8 @@ import (
 )
 
 const (
-	k8sClientBurst = 50
-	k8sClientQPS   = 25
+	k8sClientBurst = 100
+	k8sClientQPS   = 100
 )
 
 func main() {

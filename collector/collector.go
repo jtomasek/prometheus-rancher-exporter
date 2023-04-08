@@ -1,7 +1,6 @@
 package collector
 
 import (
-	"fmt"
 	"github.com/david-vtuk/prometheus-rancher-exporter/query/rancher"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/log"
@@ -365,12 +364,13 @@ func getProjectResources(client rancher.Client, m metrics) {
 }
 
 func getRancherCustomResources(client rancher.Client, m metrics) {
-	count, err := client.GetRancherCustomResourceCount()
+	resources, err := client.GetRancherCustomResourceCount()
 	if err != nil {
 		return
 	}
-
-	fmt.Println(count)
+	for key, value := range resources {
+		m.rancherCustomResources.WithLabelValues(key).Set(float64(value))
+	}
 }
 
 // Reset GaugeVecs on each tick - facilitate state transition
@@ -382,5 +382,5 @@ func resetGaugeVecMetrics(m metrics) {
 	m.projectLabels.Reset()
 	m.projectAnnotations.Reset()
 	m.projectResources.Reset()
-	m.rancherCustomResources.Reset()
+	//	m.rancherCustomResources.Reset()
 }
