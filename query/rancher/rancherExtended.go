@@ -29,9 +29,8 @@ func (r Client) GetRancherCustomResourceCount() (map[string]int, error) {
 	for _, customResource := range res.Items {
 
 		if strings.Contains(customResource.GetName(), customResourceDomain) {
-
+			wg.Add(1)
 			go func(rancherCustomResource unstructured.Unstructured) {
-				wg.Add(1)
 				defer wg.Done()
 				m.Lock()
 				resource, group, _ := strings.Cut(rancherCustomResource.GetName(), ".")
