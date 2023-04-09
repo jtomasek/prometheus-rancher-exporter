@@ -36,6 +36,9 @@ type metrics struct {
 	projectLabels      prometheus.GaugeVec
 	projectAnnotations prometheus.GaugeVec
 	projectResources   prometheus.GaugeVec
+
+	// Extended metrics for Rancher CR's
+	rancherCustomResources prometheus.GaugeVec
 }
 
 func new() metrics {
@@ -125,6 +128,10 @@ func new() metrics {
 			Help: "default namespace resource quota set the for project",
 		}, []string{"cluster_name", "project_id", "project_display_name", "project_resource_key", "project_resource_type"},
 		),
+		rancherCustomResources: *prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Name: "rancher_custom_resource_count",
+			Help: "raw count of Rancher custom resources by name",
+		}, []string{"resource_name"}),
 	}
 
 	prometheus.MustRegister(m.installedRancherVersion)
@@ -150,6 +157,8 @@ func new() metrics {
 	prometheus.MustRegister(m.projectAnnotations)
 	prometheus.MustRegister(m.projectResources)
 
+	prometheus.MustRegister(m.rancherCustomResources)
+
 	m.managedClusterCount.Set(0)
 	m.managedRKEClusterCount.Set(0)
 	m.managedRKE2ClusterCount.Set(0)
@@ -168,7 +177,6 @@ func new() metrics {
 	m.userCount.Set(0)
 
 	m.projectCount.Set(0)
-	m.projectLabels.Reset()
 
 	return m
 }
@@ -195,7 +203,7 @@ func Collect(client rancher.Client) {
 		}
 	}()
 
-	ticker := time.NewTicker(3 * time.Second)
+	ticker := time.NewTicker(10 * time.Second)
 
 	for range ticker.C {
 
@@ -214,6 +222,7 @@ func Collect(client rancher.Client) {
 		go getProjectLabels(client, m)
 		go getProjectAnnotations(client, m)
 		go getProjectResources(client, m)
+		go getRancherCustomResources(client, m)
 	}
 
 }
@@ -354,6 +363,16 @@ func getProjectResources(client rancher.Client, m metrics) {
 	}
 }
 
+func getRancherCustomResources(client rancher.Client, m metrics) {
+	resources, err := client.GetRancherCustomResourceCount()
+	if err != nil {
+		return
+	}
+	for key, value := range resources {
+		m.rancherCustomResources.WithLabelValues(key).Set(float64(value))
+	}
+}
+
 // Reset GaugeVecs on each tick - facilitate state transition
 func resetGaugeVecMetrics(m metrics) {
 	m.installedRancherVersion.Reset()
@@ -363,4 +382,5 @@ func resetGaugeVecMetrics(m metrics) {
 	m.projectLabels.Reset()
 	m.projectAnnotations.Reset()
 	m.projectResources.Reset()
+	//	m.rancherCustomResources.Reset()
 }
