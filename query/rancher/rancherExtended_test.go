@@ -25,7 +25,7 @@ func TestClient_GetRancherCustomResourceCount(t *testing.T) {
 				return
 			}
 			if len(got) < tt.want {
-				t.Errorf("GetRancherCustomResourceCount() got = %v, want %v", got, tt.want)
+				t.Errorf("GetRancherCustomResourceCount() got = %v, want %v", len(got), tt.want)
 			}
 		})
 	}
