@@ -2,7 +2,6 @@ package rancher
 
 import (
 	"context"
-	"fmt"
 	"github.com/prometheus/common/log"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -20,6 +19,7 @@ func (r Client) GetRancherCustomResourceCount() (map[string]int, error) {
 
 	rancherCustomResources := make(map[string]int)
 	var m sync.Mutex
+	var wg sync.WaitGroup
 
 	res, err := r.Client.Resource(crdGVR).List(context.Background(), v1.ListOptions{})
 	if err != nil {
@@ -31,6 +31,8 @@ func (r Client) GetRancherCustomResourceCount() (map[string]int, error) {
 		if strings.Contains(customResource.GetName(), customResourceDomain) {
 
 			go func(rancherCustomResource unstructured.Unstructured) {
+				wg.Add(1)
+				defer wg.Done()
 				m.Lock()
 				resource, group, _ := strings.Cut(rancherCustomResource.GetName(), ".")
 				version, _, err := unstructured.NestedSlice(rancherCustomResource.Object, "status", "storedVersions")
@@ -48,12 +50,10 @@ func (r Client) GetRancherCustomResourceCount() (map[string]int, error) {
 					log.Errorf("error retrieving count of Rancher CRD: %v,%s,%s,%s\n", err, group, version[0].(string), resource)
 				}
 				rancherCustomResources[rancherCustomResource.GetName()] = len(result.Items)
-				fmt.Println("Map length, goroutine", len(rancherCustomResources))
 				m.Unlock()
 			}(customResource)
 		}
 	}
-
-	fmt.Println("Map length, calling function", len(rancherCustomResources))
+	wg.Wait()
 	return rancherCustomResources, nil
 }
