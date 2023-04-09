@@ -203,7 +203,7 @@ func Collect(client rancher.Client) {
 		}
 	}()
 
-	ticker := time.NewTicker(3 * time.Second)
+	ticker := time.NewTicker(10 * time.Second)
 
 	for range ticker.C {
 

@@ -3,11 +3,12 @@ package rancher
 import (
 	"context"
 	"fmt"
+	"github.com/prometheus/common/log"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"strings"
-	"time"
+	"sync"
 )
 
 var (
@@ -17,8 +18,8 @@ var (
 
 func (r Client) GetRancherCustomResourceCount() (map[string]int, error) {
 
-	start := time.Now()
 	rancherCustomResources := make(map[string]int)
+	var m sync.Mutex
 
 	res, err := r.Client.Resource(crdGVR).List(context.Background(), v1.ListOptions{})
 	if err != nil {
@@ -29,30 +30,30 @@ func (r Client) GetRancherCustomResourceCount() (map[string]int, error) {
 
 		if strings.Contains(customResource.GetName(), customResourceDomain) {
 
-			// put this in a goroutine, probably need a mutex.
+			go func(rancherCustomResource unstructured.Unstructured) {
+				m.Lock()
+				resource, group, _ := strings.Cut(rancherCustomResource.GetName(), ".")
+				version, _, err := unstructured.NestedSlice(rancherCustomResource.Object, "status", "storedVersions")
+				if err != nil {
+					log.Errorf("error retrieving version of Rancher CRD: %v", err)
+				}
 
-			resource, group, _ := strings.Cut(customResource.GetName(), ".")
-			version, _, err := unstructured.NestedSlice(customResource.Object, "status", "storedVersions")
-			if err != nil {
-				return nil, err
-			}
+				result, err := r.Client.Resource(schema.GroupVersionResource{
+					Group:    group,
+					Version:  version[0].(string),
+					Resource: resource,
+				}).List(context.Background(), v1.ListOptions{})
 
-			result, err := r.Client.Resource(schema.GroupVersionResource{
-				Group:    group,
-				Version:  version[0].(string),
-				Resource: resource,
-			}).List(context.Background(), v1.ListOptions{})
-
-			if err != nil {
-				return nil, err
-			}
-
-			rancherCustomResources[customResource.GetName()] = len(result.Items)
+				if err != nil {
+					log.Errorf("error retrieving count of Rancher CRD: %v,%s,%s,%s\n", err, group, version[0].(string), resource)
+				}
+				rancherCustomResources[rancherCustomResource.GetName()] = len(result.Items)
+				fmt.Println("Map length, goroutine", len(rancherCustomResources))
+				m.Unlock()
+			}(customResource)
 		}
 	}
 
-	elapsed := time.Since(start)
-	fmt.Printf("CRD took %s", elapsed)
-
+	fmt.Println("Map length, calling function", len(rancherCustomResources))
 	return rancherCustomResources, nil
 }
