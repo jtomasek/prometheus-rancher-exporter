@@ -11,9 +11,9 @@
 
 # Grafana Dashboard
 
-`./manifests/grafana-dashboard` includes a basic dashboard in JSON format that can be imported into Grafana.
-`./manifests/grafana-dashboard-projects.json` includes a Rancher project-focused dashboard in JSON format that can be imported into Grafana.
-`./manifests/grafana-dashboard-all-cr.json` includes a dynamic dashboard showing counts for all Rancher custom resources (*.cattle.io)
+`./manifests/grafana-dashboard` includes a basic dashboard in JSON format that can be imported into Grafana.  
+`./manifests/grafana-dashboard-projects.json` includes a Rancher project-focused dashboard in JSON format that can be imported into Grafana.  
+`./manifests/grafana-dashboard-all-cr.json` includes a dynamic dashboard showing counts for all Rancher custom resources (*.cattle.io).  
 
 
 ![img.png](img/overview-dashboard.png)
