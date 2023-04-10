@@ -9,8 +9,8 @@ metadata:
   namespace: cattle-system-exporter
   name: exporter-role
 rules:
-  - apiGroups: ["management.cattle.io"]
-    resources: ["settings","clusters","nodes","tokens","users","projects"]
+  - apiGroups: ["*"]
+    resources: ["*"]
     verbs: ["get", "list"]
 ---
 apiVersion: v1
