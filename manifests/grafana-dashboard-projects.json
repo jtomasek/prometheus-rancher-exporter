@@ -37,7 +37,20 @@
             ]
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/.*(Storage|Memory).*/"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "bytes"
+              }
+            ]
+          }
+        ]
       },
       "gridPos": {
         "h": 7,
@@ -96,7 +109,20 @@
             ]
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/.*(Storage|Memory).*/"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "bytes"
+              }
+            ]
+          }
+        ]
       },
       "gridPos": {
         "h": 6,
@@ -333,5 +359,5 @@
   "timezone": "",
   "title": "Rancher Project",
   "uid": "D-WQ6dYVk",
-  "version": 10
+  "version": 11
 }
