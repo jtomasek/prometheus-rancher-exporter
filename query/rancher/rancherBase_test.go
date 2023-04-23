@@ -99,7 +99,7 @@ func TestClient_GetInstalledRancherVersion(t *testing.T) {
 		want    string
 		wantErr bool
 	}{
-		{"test-1", testClient, "v2.7.1", false},
+		{"test-1", testClient, "v2.7.2", false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -153,7 +153,7 @@ func TestClient_GetLatestRancherVersion(t *testing.T) {
 		want    string
 		wantErr bool
 	}{
-		{"Test-1", testClient, "v2.7.1", false},
+		{"Test-1", testClient, "v2.7.2", false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
