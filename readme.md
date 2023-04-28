@@ -26,24 +26,10 @@ By default, the exporter will use in-cluster authentication via a associated ser
 
 ## External cluster config
 
-To test using external authentication via the local `kubeconfig`, uncomment the following:
+To test using external authentication via the local `kubeconfig`, set the following environment variable:
 
-```go
-// Use this for out of cluster config
-currentUser, err := user.Current()
-if err != nil {
-	log.Fatal(err.Error())
-}
-
-kubeconfig := flag.String("kubeconfig", fmt.Sprintf("/home/%s/.kube/config", currentUser.Username), "absolute path to the kubeconfig file")
-flag.Parse()
-config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
-```
-
-Comment out the following
-```go
-// Use this for in-cluster config 
-//config, err := rest.InClusterConfig()
+```bash
+export RANCHER_EXPORTER_EXTERNAL_AUTH=TRUE
 ```
 
 * `go run main.go`

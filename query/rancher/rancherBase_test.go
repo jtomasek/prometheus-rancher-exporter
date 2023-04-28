@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/mod/semver"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -96,10 +97,10 @@ func TestClient_GetInstalledRancherVersion(t *testing.T) {
 	tests := []struct {
 		name    string
 		fields  fields
-		want    string
+		want    bool
 		wantErr bool
 	}{
-		{"test-1", testClient, "v2.7.2", false},
+		{"test-1", testClient, true, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -112,8 +113,8 @@ func TestClient_GetInstalledRancherVersion(t *testing.T) {
 				t.Errorf("GetInstalledRancherVersion() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if got != tt.want {
-				t.Errorf("GetInstalledRancherVersion() got = %v, want %v", got, tt.want)
+			if !semver.IsValid(got) {
+				t.Errorf("GetInstalledRancherVersion() got = %v, which is not valid semver", got)
 			}
 		})
 	}
@@ -150,10 +151,10 @@ func TestClient_GetLatestRancherVersion(t *testing.T) {
 	tests := []struct {
 		name    string
 		fields  fields
-		want    string
+		want    bool
 		wantErr bool
 	}{
-		{"Test-1", testClient, "v2.7.2", false},
+		{"Test-1", testClient, true, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -166,8 +167,8 @@ func TestClient_GetLatestRancherVersion(t *testing.T) {
 				t.Errorf("GetLatestRancherVersion() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if got != tt.want {
-				t.Errorf("GetLatestRancherVersion() got = %v, want %v", got, tt.want)
+			if !semver.IsValid(got) {
+				t.Errorf("GetInstalledRancherVersion() got = %v, which is not valid semver", got)
 			}
 		})
 	}
