@@ -7,6 +7,7 @@ require (
 	github.com/prometheus/common v0.26.0
 	github.com/sirupsen/logrus v1.6.0
 	github.com/tidwall/gjson v1.13.0
+	golang.org/x/mod v0.4.2
 	k8s.io/apimachinery v0.23.1
 	k8s.io/client-go v0.23.1
 )
