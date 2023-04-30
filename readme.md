@@ -1,4 +1,4 @@
-![workflow status](https://github.com/David-VTUK/prometheus-rancher-exporter/actions/workflows/test-build-publish.yml/badge.svg)
+![workflow status](https://github.com/David-VTUK/prometheus-rancher-exporter/actions/workflows/test-build-publish.yml/badge.svg) [![Go Report Card](https://goreportcard.com/badge/github.com/david-vtuk/prometheus-rancher-exporter)](https://goreportcard.com/report/github.com/david-vtuk/prometheus-rancher-exporter)
 
 # Unofficial Prometheus Exporter for Rancher
 
