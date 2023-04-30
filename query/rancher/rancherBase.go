@@ -2,15 +2,16 @@ package rancher
 
 import (
 	"context"
-	"github.com/tidwall/gjson"
-	"io"
+	"encoding/json"
+	"fmt"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
-	"net/http"
 	"net"
+	"net/http"
+	"regexp"
 )
 
 var (
@@ -54,6 +55,10 @@ type projectResource struct {
 	ResourceKey        string
 	ResourceValue      float64
 	ResourceType       string
+}
+
+type Release struct {
+	TagName string `json:"tag_name"`
 }
 
 func (r Client) GetInstalledRancherVersion() (string, error) {
@@ -103,9 +108,14 @@ func (r Client) GetLatestRancherVersion() (string, error) {
 	// check dns resultion first, if this fails http.Get segfaults
 	_, err := net.LookupHost("api.github.com")
 	if err != nil {
-	  return "no internet", nil
-        }
-	resp, err := http.Get("https://api.github.com/repos/rancher/rancher/releases/latest")
+		return "", err
+	}
+
+	resp, err := http.Get("https://api.github.com/repos/rancher/rancher/releases")
+	if err != nil {
+		fmt.Printf("failed to retrieve releases: %v\n", err)
+		return "", err
+	}
 
 	defer resp.Body.Close()
 
@@ -113,15 +123,23 @@ func (r Client) GetLatestRancherVersion() (string, error) {
 		return "", err
 	}
 
-	bodyBytes, err := io.ReadAll(resp.Body)
-
-	if err != nil {
+	// Parse JSON response
+	var releases []Release
+	if err := json.NewDecoder(resp.Body).Decode(&releases); err != nil {
+		fmt.Printf("failed to parse JSON: %v\n", err)
 		return "", err
 	}
 
-	val := gjson.Get(string(bodyBytes), "tag_name")
+	// Find latest release version that is not a pre-release/release candidate/patch version
+	var latestVersion string
+	re := regexp.MustCompile(`^v\d+\.\d+\.\d+$`)
+	for _, release := range releases {
+		if re.MatchString(release.TagName) && release.TagName > latestVersion {
+			latestVersion = release.TagName
+		}
+	}
 
-	return val.String(), nil
+	return latestVersion, nil
 }
 
 func (r Client) GetNumberOfManagedNodes() (int, error) {
