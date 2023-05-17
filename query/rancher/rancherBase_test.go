@@ -3,15 +3,16 @@ package rancher
 import (
 	"flag"
 	"fmt"
+	"os"
+	"os/user"
+	"reflect"
+	"testing"
+
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/mod/semver"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
-	"os"
-	"os/user"
-	"reflect"
-	"testing"
 )
 
 type fields struct {

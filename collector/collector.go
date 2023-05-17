@@ -1,10 +1,11 @@
 package collector
 
 import (
+	"time"
+
 	"github.com/david-vtuk/prometheus-rancher-exporter/query/rancher"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/common/log"
-	"time"
+	log "github.com/sirupsen/logrus"
 )
 
 type metrics struct {
