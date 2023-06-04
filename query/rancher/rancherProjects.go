@@ -2,10 +2,11 @@ package rancher
 
 import (
 	"context"
+
+	"k8s.io/apimachinery/pkg/api/resource"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 var (
@@ -146,13 +147,13 @@ func (r Client) GetProjectResourceQuota() ([]projectResource, error) {
 		if projectClusterName != "" {
 
 			for key, value := range projectResourceQuotas {
-                                 var convertedValue float64
+				var convertedValue float64
 				// Convert the Quota values to base numeric value, defined by unit
 				quantity, err := resource.ParseQuantity(value.(string))
 				if err != nil {
 					continue
 				}
-                                convertedValue = float64(quantity.Value())
+				convertedValue = float64(quantity.Value())
 
 				resource := projectResource{
 					Projectid:          projectValue.GetName(),
@@ -174,13 +175,13 @@ func (r Client) GetProjectResourceQuota() ([]projectResource, error) {
 			}
 
 			for key, value := range projectResourceQuotas {
-                                 var convertedValue float64
-                                // Convert the Quota values to base numeric value, defined by unit
-                                quantity, err := resource.ParseQuantity(value.(string))
+				var convertedValue float64
+				// Convert the Quota values to base numeric value, defined by unit
+				quantity, err := resource.ParseQuantity(value.(string))
 				if err != nil {
-				    continue
+					continue
 				}
-			       	convertedValue = float64(quantity.Value())
+				convertedValue = float64(quantity.Value())
 				resource := projectResource{
 					Projectid:          projectValue.GetName(),
 					ProjectDisplayName: projectDisplayName,

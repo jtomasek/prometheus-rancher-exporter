@@ -3,6 +3,11 @@ package main
 import (
 	"flag"
 	"fmt"
+	"net/http"
+	"os"
+	"os/user"
+	"strings"
+
 	"github.com/david-vtuk/prometheus-rancher-exporter/collector"
 	"github.com/david-vtuk/prometheus-rancher-exporter/query/rancher"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -10,10 +15,6 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
-	"net/http"
-	"os"
-	"os/user"
-	"strings"
 )
 
 const (
@@ -39,11 +40,12 @@ func main() {
 
 	if InClusterConfig {
 		config, err = rest.InClusterConfig()
+                if err != nil {
+                        log.Fatal("Unable to construct REST client")
+                }
+
 		config.Burst = k8sClientBurst
 		config.QPS = k8sClientQPS
-		if err != nil {
-			log.Fatal("Unable to construct REST client")
-		}
 	} else {
 		currentUser, err := user.Current()
 		if err != nil {
@@ -53,12 +55,12 @@ func main() {
 		kubeconfig := flag.String("kubeconfig", fmt.Sprintf("/home/%s/.kube/config", currentUser.Username), "absolute path to the kubeconfig file")
 		flag.Parse()
 		config, err = clientcmd.BuildConfigFromFlags("", *kubeconfig)
+                if err != nil {
+                        log.Fatal("Unable to construct Rancher client Config")
+                }
+
 		config.Burst = k8sClientBurst
 		config.QPS = k8sClientQPS
-
-		if err != nil {
-			log.Fatal("Unable to construct Rancher client Config")
-		}
 
 	}
 
