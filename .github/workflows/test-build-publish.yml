@@ -124,13 +124,44 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      - name: Retrieve latest Docker image version
+        id: get_version
+        run: |
+          echo "image_version=$(curl -s "https://registry.hub.docker.com/v2/repositories/virtualthoughts/prometheus-rancher-exporter/tags/" | jq -r '.results[].name' | grep -v latest | sort -V | tail -n 1)" >> $GITHUB_OUTPUT
+
+      - name: Increment version
+        id: increment_version
+        run: |
+          # Increment the retrieved version
+          echo "updated_version=$(echo "${{ steps.get_version.outputs.image_version }}" | awk -F. -v OFS=. '{$NF++;print}')" >> $GITHUB_OUTPUT
+
       - name: Build and push
         uses: docker/build-push-action@v3
         with:
           context: .
           push: true
-          tags: virtualthoughts/prometheus-rancher-exporter:latest
+          tags: |
+            virtualthoughts/prometheus-rancher-exporter:${{ steps.increment_version.outputs.updated_version }}
+            virtualthoughts/prometheus-rancher-exporter:latest
 
+      - name: Update Kubernetes YAML manifest
+        run: |
+          # Install yq
+          curl -sL https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -o yq
+          chmod +x yq
+          sudo mv yq /usr/local/bin/
+          
+          # Find and update the image tag in the YAML file
+          IMAGE_NAME="virtualthoughts/prometheus-rancher-exporter"
+          NEW_TAG="${{ steps.increment_version.outputs.updated_version }}"
+          OLD_TAG=$(yq eval '.spec.template.spec.containers[] | select(.name == "rancher-exporter").image' manifests/exporter.yaml | cut -d":" -f2)
+          NEW_IMAGE="${IMAGE_NAME}:${NEW_TAG}"
+          sed -i "s|${IMAGE_NAME}:${OLD_TAG}|${NEW_IMAGE}|" manifests/exporter.yaml
 
-
-
+      - name: Commit and push changes
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git add manifests/exporter.yaml
+          git commit -m "Update Kubernetes manifest"
+          git push
