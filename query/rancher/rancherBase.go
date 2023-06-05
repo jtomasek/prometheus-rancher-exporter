@@ -270,6 +270,20 @@ func (r Client) GetNumberOfUsers() (int, error) {
 		return 0, err
 	}
 
-	return len(res.Items), nil
+	var users int
+
+	// 		clusterName, _, err := unstructured.NestedString(cluster.Object, "spec", "displayName")
+
+	for _, user := range res.Items {
+		userName, _, err := unstructured.NestedString(user.Object, "username")
+		if err != nil {
+			return 0, err
+		}
+		if userName != "" {
+			users++
+		}
+	}
+
+	return users, nil
 
 }

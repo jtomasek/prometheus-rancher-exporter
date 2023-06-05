@@ -266,7 +266,7 @@ func TestClient_GetNumberOfUsers(t *testing.T) {
 		want    int
 		wantErr bool
 	}{
-		{"Test-1", testClient, 5, false},
+		{"Test-1", testClient, 1, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
