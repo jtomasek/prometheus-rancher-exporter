@@ -9,13 +9,14 @@
 1. Enable monitoring in the Rancher Management Cluster, aka `local` cluster
 2. Apply the manifest from this repo : `kubectl apply -f ./manifests/exporter.yaml`
 
-# Grafana Dashboard
+# Grafana Dashboards
 
 `./manifests/grafana-dashboard` includes a basic dashboard in JSON format that can be imported into Grafana.  
 `./manifests/grafana-dashboard-projects.json` includes a Rancher project-focused dashboard in JSON format that can be imported into Grafana.  
 `./manifests/grafana-dashboard-all-cr.json` includes a dynamic dashboard showing counts for all Rancher custom resources (*.cattle.io).  
 `./manifests/grafana-dashboard-nodes.json` includes a dynaic dashboard showing global node metadata across all managed clusters (ie Kernel/OS versions, roles, etc)  
 
+# Example Screenshots  
 
 ![img.png](img/overview-dashboard.png)
 ![img.png](img/proj-dashboard.png)
