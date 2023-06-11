@@ -63,11 +63,16 @@ type Release struct {
 }
 
 type nodeInfo struct {
-	Name           string
-	ParentCluster  string
-	IsControlPlane bool
-	IsEtcd         bool
-	IsWorker       bool
+	Name                    string
+	ParentCluster           string
+	IsControlPlane          bool
+	IsEtcd                  bool
+	IsWorker                bool
+	Architecture            string
+	ContainerRuntimeVersion string
+	KernelVersion           string
+	OS                      string
+	OSImage                 string
 }
 
 func (r Client) GetInstalledRancherVersion() (string, error) {
@@ -173,13 +178,6 @@ func (r Client) GetManagedNodeInfo() ([]nodeInfo, error) {
 
 		nodeValue := nodeInfo{}
 
-		name, _, err := unstructured.NestedString(node.Object, "spec", "requestedHostname")
-		if err != nil {
-			return nil, err
-		}
-
-		nodeValue.Name = name
-
 		parentClusterID, _, err := unstructured.NestedString(node.Object, "metadata", "namespace")
 		if err != nil {
 			return nil, err
@@ -190,30 +188,75 @@ func (r Client) GetManagedNodeInfo() ([]nodeInfo, error) {
 			return nil, err
 		}
 
-		nodeValue.ParentCluster = clusterName
+		if clusterName != "local" {
 
-		cpl, _, err := unstructured.NestedBool(node.Object, "spec", "controlPlane")
-		if err != nil {
-			return nil, err
+			nodeValue.ParentCluster = clusterName
+
+			name, _, err := unstructured.NestedString(node.Object, "spec", "requestedHostname")
+			if err != nil {
+				return nil, err
+			}
+
+			nodeValue.Name = name
+
+			cpl, _, err := unstructured.NestedBool(node.Object, "spec", "controlPlane")
+			if err != nil {
+				return nil, err
+			}
+
+			nodeValue.IsControlPlane = cpl
+
+			etcd, _, err := unstructured.NestedBool(node.Object, "spec", "etcd")
+			if err != nil {
+				return nil, err
+			}
+
+			nodeValue.IsEtcd = etcd
+
+			worker, _, err := unstructured.NestedBool(node.Object, "spec", "worker")
+			if err != nil {
+				return nil, err
+			}
+
+			nodeValue.IsWorker = worker
+
+			architecture, _, err := unstructured.NestedString(node.Object, "status", "internalNodeStatus", "nodeInfo", "architecture")
+			if err != nil {
+				return nil, err
+			}
+
+			nodeValue.Architecture = architecture
+
+			containerRunTime, _, err := unstructured.NestedString(node.Object, "status", "internalNodeStatus", "nodeInfo", "containerRuntimeVersion")
+			if err != nil {
+				return nil, err
+			}
+
+			nodeValue.ContainerRuntimeVersion = containerRunTime
+
+			kernelVersion, _, err := unstructured.NestedString(node.Object, "status", "internalNodeStatus", "nodeInfo", "kernelVersion")
+			if err != nil {
+				return nil, err
+			}
+
+			nodeValue.KernelVersion = kernelVersion
+
+			OS, _, err := unstructured.NestedString(node.Object, "status", "internalNodeStatus", "nodeInfo", "operatingSystem")
+			if err != nil {
+				return nil, err
+			}
+
+			nodeValue.OS = OS
+
+			osImage, _, err := unstructured.NestedString(node.Object, "status", "internalNodeStatus", "nodeInfo", "osImage")
+			if err != nil {
+				return nil, err
+			}
+
+			nodeValue.OSImage = osImage
+
+			nodes = append(nodes, nodeValue)
 		}
-
-		nodeValue.IsControlPlane = cpl
-
-		etcd, _, err := unstructured.NestedBool(node.Object, "spec", "etcd")
-		if err != nil {
-			return nil, err
-		}
-
-		nodeValue.IsEtcd = etcd
-
-		worker, _, err := unstructured.NestedBool(node.Object, "spec", "worker")
-		if err != nil {
-			return nil, err
-		}
-
-		nodeValue.IsWorker = worker
-
-		nodes = append(nodes, nodeValue)
 	}
 
 	return nodes, nil

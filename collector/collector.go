@@ -140,7 +140,8 @@ func new() metrics {
 		managedNodeInfo: *prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Name: "rancher_managed_nodes_info",
 			Help: "additional metadata about known downstream cluster nodes",
-		}, []string{"name", "parent_cluster", "is_control_plane", "is_etcd", "is_worker"},
+		}, []string{"name", "parent_cluster", "is_control_plane", "is_etcd", "is_worker", "architecture",
+			"container_runtime_version", "kernel_version", "os", "os_image"},
 		),
 	}
 
@@ -393,7 +394,9 @@ func getNodeInfo(client rancher.Client, m metrics) {
 	}
 
 	for _, value := range nodeResources {
-		m.managedNodeInfo.WithLabelValues(value.Name, value.ParentCluster, strconv.FormatBool(value.IsControlPlane), strconv.FormatBool(value.IsEtcd), strconv.FormatBool(value.IsWorker))
+		m.managedNodeInfo.WithLabelValues(value.Name, value.ParentCluster, strconv.FormatBool(value.IsControlPlane),
+			strconv.FormatBool(value.IsEtcd), strconv.FormatBool(value.IsWorker), value.Architecture,
+			value.ContainerRuntimeVersion, value.KernelVersion, value.OS, value.OSImage).Set(1)
 	}
 }
 
@@ -407,5 +410,4 @@ func resetGaugeVecMetrics(m metrics) {
 	m.projectAnnotations.Reset()
 	m.projectResources.Reset()
 	m.managedNodeInfo.Reset()
-	//	m.rancherCustomResources.Reset()
 }
