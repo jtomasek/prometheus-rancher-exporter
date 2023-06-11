@@ -1,6 +1,7 @@
 package collector
 
 import (
+	"strconv"
 	"time"
 
 	"github.com/david-vtuk/prometheus-rancher-exporter/query/rancher"
@@ -40,6 +41,9 @@ type metrics struct {
 
 	// Extended metrics for Rancher CR's
 	rancherCustomResources prometheus.GaugeVec
+
+	// Additional Node Information
+	managedNodeInfo prometheus.GaugeVec
 }
 
 func new() metrics {
@@ -133,6 +137,12 @@ func new() metrics {
 			Name: "rancher_custom_resource_count",
 			Help: "raw count of Rancher custom resources by name",
 		}, []string{"resource_name"}),
+		managedNodeInfo: *prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Name: "rancher_managed_nodes_info",
+			Help: "additional metadata about known downstream cluster nodes",
+		}, []string{"name", "parent_cluster", "is_control_plane", "is_etcd", "is_worker", "architecture",
+			"container_runtime_version", "kernel_version", "os", "os_image"},
+		),
 	}
 
 	prometheus.MustRegister(m.installedRancherVersion)
@@ -159,6 +169,7 @@ func new() metrics {
 	prometheus.MustRegister(m.projectResources)
 
 	prometheus.MustRegister(m.rancherCustomResources)
+	prometheus.MustRegister(m.managedNodeInfo)
 
 	m.managedClusterCount.Set(0)
 	m.managedRKEClusterCount.Set(0)
@@ -178,6 +189,7 @@ func new() metrics {
 	m.userCount.Set(0)
 
 	m.projectCount.Set(0)
+	m.managedNodeInfo.Reset()
 
 	return m
 }
@@ -224,6 +236,7 @@ func Collect(client rancher.Client) {
 		go getProjectAnnotations(client, m)
 		go getProjectResources(client, m)
 		go getRancherCustomResources(client, m)
+		go getNodeInfo(client, m)
 	}
 
 }
@@ -374,6 +387,19 @@ func getRancherCustomResources(client rancher.Client, m metrics) {
 	}
 }
 
+func getNodeInfo(client rancher.Client, m metrics) {
+	nodeResources, err := client.GetManagedNodeInfo()
+	if err != nil {
+		return
+	}
+
+	for _, value := range nodeResources {
+		m.managedNodeInfo.WithLabelValues(value.Name, value.ParentCluster, strconv.FormatBool(value.IsControlPlane),
+			strconv.FormatBool(value.IsEtcd), strconv.FormatBool(value.IsWorker), value.Architecture,
+			value.ContainerRuntimeVersion, value.KernelVersion, value.OS, value.OSImage).Set(1)
+	}
+}
+
 // Reset GaugeVecs on each tick - facilitate state transition
 func resetGaugeVecMetrics(m metrics) {
 	m.installedRancherVersion.Reset()
@@ -383,5 +409,5 @@ func resetGaugeVecMetrics(m metrics) {
 	m.projectLabels.Reset()
 	m.projectAnnotations.Reset()
 	m.projectResources.Reset()
-	//	m.rancherCustomResources.Reset()
+	m.managedNodeInfo.Reset()
 }

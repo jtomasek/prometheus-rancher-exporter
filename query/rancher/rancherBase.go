@@ -62,6 +62,19 @@ type Release struct {
 	TagName string `json:"tag_name"`
 }
 
+type nodeInfo struct {
+	Name                    string
+	ParentCluster           string
+	IsControlPlane          bool
+	IsEtcd                  bool
+	IsWorker                bool
+	Architecture            string
+	ContainerRuntimeVersion string
+	KernelVersion           string
+	OS                      string
+	OSImage                 string
+}
+
 func (r Client) GetInstalledRancherVersion() (string, error) {
 
 	res, err := r.Client.Resource(settingGVR).Get(context.Background(), "server-version", v1.GetOptions{})
@@ -151,6 +164,102 @@ func (r Client) GetNumberOfManagedNodes() (int, error) {
 	}
 
 	return len(res.Items), nil
+}
+
+func (r Client) GetManagedNodeInfo() ([]nodeInfo, error) {
+	var nodes []nodeInfo
+
+	res, err := r.Client.Resource(nodeGVR).List(context.Background(), v1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	for _, node := range res.Items {
+
+		nodeValue := nodeInfo{}
+
+		parentClusterID, _, err := unstructured.NestedString(node.Object, "metadata", "namespace")
+		if err != nil {
+			return nil, err
+		}
+
+		clusterName, err := r.clusterIdToName(parentClusterID)
+		if err != nil {
+			return nil, err
+		}
+
+		if clusterName != "local" {
+
+			nodeValue.ParentCluster = clusterName
+
+			name, _, err := unstructured.NestedString(node.Object, "spec", "requestedHostname")
+			if err != nil {
+				return nil, err
+			}
+
+			nodeValue.Name = name
+
+			cpl, _, err := unstructured.NestedBool(node.Object, "spec", "controlPlane")
+			if err != nil {
+				return nil, err
+			}
+
+			nodeValue.IsControlPlane = cpl
+
+			etcd, _, err := unstructured.NestedBool(node.Object, "spec", "etcd")
+			if err != nil {
+				return nil, err
+			}
+
+			nodeValue.IsEtcd = etcd
+
+			worker, _, err := unstructured.NestedBool(node.Object, "spec", "worker")
+			if err != nil {
+				return nil, err
+			}
+
+			nodeValue.IsWorker = worker
+
+			architecture, _, err := unstructured.NestedString(node.Object, "status", "internalNodeStatus", "nodeInfo", "architecture")
+			if err != nil {
+				return nil, err
+			}
+
+			nodeValue.Architecture = architecture
+
+			containerRunTime, _, err := unstructured.NestedString(node.Object, "status", "internalNodeStatus", "nodeInfo", "containerRuntimeVersion")
+			if err != nil {
+				return nil, err
+			}
+
+			nodeValue.ContainerRuntimeVersion = containerRunTime
+
+			kernelVersion, _, err := unstructured.NestedString(node.Object, "status", "internalNodeStatus", "nodeInfo", "kernelVersion")
+			if err != nil {
+				return nil, err
+			}
+
+			nodeValue.KernelVersion = kernelVersion
+
+			OS, _, err := unstructured.NestedString(node.Object, "status", "internalNodeStatus", "nodeInfo", "operatingSystem")
+			if err != nil {
+				return nil, err
+			}
+
+			nodeValue.OS = OS
+
+			osImage, _, err := unstructured.NestedString(node.Object, "status", "internalNodeStatus", "nodeInfo", "osImage")
+			if err != nil {
+				return nil, err
+			}
+
+			nodeValue.OSImage = osImage
+
+			nodes = append(nodes, nodeValue)
+		}
+	}
+
+	return nodes, nil
 }
 
 func (r Client) GetClusterConnectedState() (map[string]bool, error) {
@@ -272,8 +381,6 @@ func (r Client) GetNumberOfUsers() (int, error) {
 
 	var users int
 
-	// 		clusterName, _, err := unstructured.NestedString(cluster.Object, "spec", "displayName")
-
 	for _, user := range res.Items {
 		userName, _, err := unstructured.NestedString(user.Object, "username")
 		if err != nil {
@@ -285,5 +392,4 @@ func (r Client) GetNumberOfUsers() (int, error) {
 	}
 
 	return users, nil
-
 }
