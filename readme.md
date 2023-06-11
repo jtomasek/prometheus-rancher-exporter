@@ -19,6 +19,7 @@
 ![img.png](img/overview-dashboard.png)
 ![img.png](img/proj-dashboard.png)
 ![img.png](img/cr-dashboard.png)
+![image](https://github.com/David-VTUK/prometheus-rancher-exporter/assets/5892615/ffae3d27-0980-4781-953e-05014a17a55d)
 
 # Developing
 
