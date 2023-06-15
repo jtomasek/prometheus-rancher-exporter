@@ -202,7 +202,7 @@ func Collect(client rancher.Client, Timer_GetLatestRancherVersion int, Timer_tic
 	go func() {
 		ticker := time.NewTicker(time.Duration(Timer_GetLatestRancherVersion) * time.Minute)
 
-		for range ticker.C {
+		for ; ; <-ticker.C {
 
 			m.latestRancherVersion.Reset()
 
@@ -218,7 +218,7 @@ func Collect(client rancher.Client, Timer_GetLatestRancherVersion int, Timer_tic
 
 	ticker := time.NewTicker(time.Duration(Timer_ticker)* time.Second)
 
-	for range ticker.C {
+	for ; ; <-ticker.C {
 
 		resetGaugeVecMetrics(m)
 		log.Info("updating rancher metrics")
