@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/user"
 	"strings"
+	"strconv"
 
 	"github.com/david-vtuk/prometheus-rancher-exporter/collector"
 	"github.com/david-vtuk/prometheus-rancher-exporter/query/rancher"
@@ -21,6 +22,14 @@ const (
 	k8sClientBurst = 100
 	k8sClientQPS   = 100
 )
+
+func getEnv(key string, defaultValue string) string {
+    if value, ok := os.LookupEnv(key); ok {
+        return value
+    }
+
+    return defaultValue
+}
 
 func main() {
 
@@ -37,6 +46,9 @@ func main() {
 		log.Info("RANCHER_EXPORTER_EXTERNAL_AUTH env variable set to true, using out of cluster config")
 		InClusterConfig = false
 	}
+
+	Timer_GetLatestRancherVersion, err := strconv.Atoi(getEnv("TIMER_GET_LATEST_RANCHER_VERSION", "1"))
+	Timer_ticker, err := strconv.Atoi(getEnv("TIMER_TICKER", "10"))
 
 	if InClusterConfig {
 		config, err = rest.InClusterConfig()
@@ -75,7 +87,7 @@ func main() {
 	}
 
 	//Kick off collector in background
-	go collector.Collect(RancherClient)
+	go collector.Collect(RancherClient, Timer_GetLatestRancherVersion, Timer_ticker)
 
 	//This section will start the HTTP server and expose
 	//any metrics on the /metrics endpoint.
