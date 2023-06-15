@@ -194,13 +194,13 @@ func new() metrics {
 	return m
 }
 
-func Collect(client rancher.Client) {
+func Collect(client rancher.Client, Timer_GetLatestRancherVersion int, Timer_ticker int) {
 	m := new()
 
 	// GitHub API request limits necessitate polling at a different interval
 
 	go func() {
-		ticker := time.NewTicker(1 * time.Minute)
+		ticker := time.NewTicker(time.Duration(Timer_GetLatestRancherVersion) * time.Minute)
 
 		for range ticker.C {
 
@@ -216,7 +216,7 @@ func Collect(client rancher.Client) {
 		}
 	}()
 
-	ticker := time.NewTicker(10 * time.Second)
+	ticker := time.NewTicker(time.Duration(Timer_ticker)* time.Second)
 
 	for range ticker.C {
 
