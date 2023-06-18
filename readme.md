@@ -8,6 +8,11 @@
 
 1. Enable monitoring in the Rancher Management Cluster, aka `local` cluster
 2. Apply the manifest from this repo : `kubectl apply -f ./manifests/exporter.yaml`
+3. You can set timers by environment variable:
+   
+   `TIMER_TICKER=10` - how ofter read data, in seconds
+   
+   `TIMER_GET_LATEST_RANCHER_VERSION=1` - how often get latest rancher version from github, in minutes
 
 # Grafana Dashboards
 
