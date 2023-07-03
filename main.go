@@ -3,11 +3,12 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/david-vtuk/prometheus-rancher-exporter/internal/utils"
 	"net/http"
 	"os"
 	"os/user"
-	"strings"
 	"strconv"
+	"strings"
 
 	"github.com/david-vtuk/prometheus-rancher-exporter/collector"
 	"github.com/david-vtuk/prometheus-rancher-exporter/query/rancher"
@@ -24,11 +25,11 @@ const (
 )
 
 func getEnv(key string, defaultValue string) string {
-    if value, ok := os.LookupEnv(key); ok {
-        return value
-    }
+	if value, ok := os.LookupEnv(key); ok {
+		return value
+	}
 
-    return defaultValue
+	return defaultValue
 }
 
 func main() {
@@ -52,9 +53,9 @@ func main() {
 
 	if InClusterConfig {
 		config, err = rest.InClusterConfig()
-                if err != nil {
-                        log.Fatal("Unable to construct REST client")
-                }
+		if err != nil {
+			log.Fatal("Unable to construct REST client")
+		}
 
 		config.Burst = k8sClientBurst
 		config.QPS = k8sClientQPS
@@ -67,9 +68,9 @@ func main() {
 		kubeconfig := flag.String("kubeconfig", fmt.Sprintf("/home/%s/.kube/config", currentUser.Username), "absolute path to the kubeconfig file")
 		flag.Parse()
 		config, err = clientcmd.BuildConfigFromFlags("", *kubeconfig)
-                if err != nil {
-                        log.Fatal("Unable to construct Rancher client Config")
-                }
+		if err != nil {
+			log.Fatal("Unable to construct Rancher client Config")
+		}
 
 		config.Burst = k8sClientBurst
 		config.QPS = k8sClientQPS
@@ -85,6 +86,13 @@ func main() {
 		Config: config,
 		Client: client,
 	}
+
+	rancherInstalled, rancherBackupsInstalled, err := utils.CheckInstalledRancherApps(RancherClient)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	fmt.Printf("Rancher Installed %s, Rancher Backup Installed %s\n", strconv.FormatBool(rancherInstalled), strconv.FormatBool(rancherBackupsInstalled))
 
 	//Kick off collector in background
 	go collector.Collect(RancherClient, Timer_GetLatestRancherVersion, Timer_ticker)
