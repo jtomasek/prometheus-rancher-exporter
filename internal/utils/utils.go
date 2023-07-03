@@ -12,7 +12,7 @@ var (
 	appGVR = schema.GroupVersionResource{Group: "catalog.cattle.io", Version: "v1", Resource: "apps"}
 )
 
-// CheckInstalledRancherApps /*
+// CheckInstalledRancherApps Determines if both Rancher and the Backup operator are installed
 func CheckInstalledRancherApps(r rancher.Client) (bool, bool, error) {
 
 	var rancherInstalled = false
