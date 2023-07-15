@@ -1,10 +1,10 @@
 package collector
 
 import (
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	"strconv"
 	"time"
 
-	_ "github.com/david-vtuk/prometheus-rancher-exporter/pkg/types"
 	"github.com/david-vtuk/prometheus-rancher-exporter/query/rancher"
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
@@ -202,30 +202,26 @@ func initRancherMetrics() rancherMetrics {
 	return m
 }
 
-func initRancherBackupMetrics() rancherBackupMetrics {
+func initRancherBackupMetrics(reg *prometheus.Registry) rancherBackupMetrics {
+
 	rBackupMetrics := rancherBackupMetrics{
-		backupCount: prometheus.NewGauge(prometheus.GaugeOpts{
+		backupCount: promauto.With(reg).NewGauge(prometheus.GaugeOpts{
 			Name: "rancher_backups_count",
 			Help: "number of rancher backups",
 		}),
-		restoreCount: prometheus.NewGauge(prometheus.GaugeOpts{
+		restoreCount: promauto.With(reg).NewGauge(prometheus.GaugeOpts{
 			Name: "rancher_restore_count",
 			Help: "number of rancher restore",
 		}),
-		restoreSetCount: prometheus.NewGauge(prometheus.GaugeOpts{
+		restoreSetCount: promauto.With(reg).NewGauge(prometheus.GaugeOpts{
 			Name: "rancher_restore_set_count",
 			Help: "number of rancher restore sets",
 		}),
-		backup: *prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		backup: *promauto.With(reg).NewGaugeVec(prometheus.GaugeOpts{
 			Name: "rancher_backup",
 			Help: "details regarding a specific backup operation",
 		}, []string{"name", "resourceSetName", "retentionCount", "backupType", "status", "filename", "storageLocation"}),
 	}
-
-	prometheus.MustRegister(rBackupMetrics.backupCount)
-	prometheus.MustRegister(rBackupMetrics.restoreCount)
-	prometheus.MustRegister(rBackupMetrics.restoreSetCount)
-	prometheus.MustRegister(rBackupMetrics.backup)
 
 	rBackupMetrics.backupCount.Set(0)
 	rBackupMetrics.restoreCount.Set(0)
@@ -235,35 +231,37 @@ func initRancherBackupMetrics() rancherBackupMetrics {
 	return rBackupMetrics
 }
 
-func Collect(client rancher.Client, Timer_GetLatestRancherVersion int, Timer_ticker int, rancherInstalled bool, rancherBackupInstalled bool) {
+func Collect(client rancher.Client, Timer_GetLatestRancherVersion int, Timer_ticker int, rancherBackupInstalled bool) {
 
 	baseMetrics := initRancherMetrics()
 
 	// GitHub API request limits necessitate polling at a different interval
+	/*
+		go func() {
+			ticker := time.NewTicker(time.Duration(Timer_GetLatestRancherVersion) * time.Minute)
 
-	go func() {
-		ticker := time.NewTicker(time.Duration(Timer_GetLatestRancherVersion) * time.Minute)
+			for ; ; <-ticker.C {
 
-		for ; ; <-ticker.C {
+				baseMetrics.latestRancherVersion.Reset()
 
-			baseMetrics.latestRancherVersion.Reset()
+				latestVers, err := client.GetLatestRancherVersion()
 
-			latestVers, err := client.GetLatestRancherVersion()
+				if err != nil {
+					log.Errorf("error retrieving latest Rancher version: %v", err)
+				}
 
-			if err != nil {
-				log.Errorf("error retrieving latest Rancher version: %v", err)
+				baseMetrics.latestRancherVersion.WithLabelValues(latestVers).Set(1)
 			}
+		}()
 
-			baseMetrics.latestRancherVersion.WithLabelValues(latestVers).Set(1)
-		}
-	}()
+	*/
 
 	ticker := time.NewTicker(time.Duration(Timer_ticker) * time.Second)
 
 	for ; ; <-ticker.C {
 
 		resetGaugeVecMetrics(baseMetrics)
-		log.Info("updating rancher baseMetrics")
+		log.Info("Updating Metrics")
 
 		go getInstalledRancherVersion(client, baseMetrics)
 		go getClusterConnectedState(client, baseMetrics)
@@ -280,12 +278,20 @@ func Collect(client rancher.Client, Timer_GetLatestRancherVersion int, Timer_tic
 		go getRancherCustomResources(client, baseMetrics)
 		go getNodeInfo(client, baseMetrics)
 
-		if rancherBackupInstalled {
-			backupMetrics := initRancherBackupMetrics()
-			go getNumberOfBackups(client, backupMetrics)
-
-		}
 	}
+}
+
+func CollectBackupMetrics(client rancher.Client, Timer_ticker int, reg *prometheus.Registry) {
+
+	backupMetrics := initRancherBackupMetrics(reg)
+
+	ticker := time.NewTicker(time.Duration(Timer_ticker) * time.Second)
+
+	for ; ; <-ticker.C {
+		go getNumberOfBackups(client, backupMetrics)
+		go getBackups(client, backupMetrics)
+	}
+
 }
 
 func getInstalledRancherVersion(client rancher.Client, m rancherMetrics) {
@@ -448,8 +454,25 @@ func getNodeInfo(client rancher.Client, m rancherMetrics) {
 }
 
 func getNumberOfBackups(client rancher.Client, m rancherBackupMetrics) {
-	client.getnumberofba
+	backups, err := client.GetNumberOfBackups()
+	if err != nil {
+		log.Errorf("error retrieving number of backups: %v", err)
+	}
 
+	m.backupCount.Set(float64(backups))
+}
+
+func getBackups(client rancher.Client, m rancherBackupMetrics) {
+	backups, err := client.GetBackups()
+	if err != nil {
+		log.Errorf("error retrieving backups: %v", err)
+	}
+
+	for _, value := range backups {
+
+		//[]string{"name", "resourceSetName", "retentionCount", "backupType", "status", "filename", "storageLocation"}),
+		m.backup.WithLabelValues(value.Name, value.ResourceSetName, strconv.FormatInt(value.RetentionCount, 10), value.BackupType, value.Message, value.Filename, value.StorageLocation)
+	}
 }
 
 // Reset GaugeVecs on each tick - facilitate state transition

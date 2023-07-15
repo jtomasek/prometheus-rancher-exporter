@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/david-vtuk/prometheus-rancher-exporter/internal/utils"
+	"github.com/prometheus/client_golang/prometheus"
 	"net/http"
 	"os"
 	"os/user"
@@ -96,11 +97,18 @@ func main() {
 	fmt.Printf("Rancher Installed %s, Rancher Backup Installed %s\n", strconv.FormatBool(rancherInstalled), strconv.FormatBool(rancherBackupsInstalled))
 
 	//Kick off collector in background
-	go collector.Collect(RancherClient, Timer_GetLatestRancherVersion, Timer_ticker)
+	if rancherInstalled {
+		http.Handle("/metrics", promhttp.Handler())
+		go collector.Collect(RancherClient, Timer_GetLatestRancherVersion, Timer_ticker, rancherBackupsInstalled)
+	}
 
-	//This section will start the HTTP server and expose
-	//any metrics on the /metrics endpoint.
-	http.Handle("/metrics", promhttp.Handler())
+	if rancherBackupsInstalled {
+		reg := prometheus.NewRegistry()
+		backupsHandler := promhttp.HandlerFor(reg, promhttp.HandlerOpts{})
+		http.Handle("/backup-metrics", backupsHandler)
+		go collector.CollectBackupMetrics(RancherClient, Timer_ticker, reg)
+	}
+
 	log.Info("Beginning to serve on port :8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
