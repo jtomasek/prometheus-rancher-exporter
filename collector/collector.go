@@ -5,14 +5,14 @@ import (
 	"time"
 
 	"github.com/david-vtuk/prometheus-rancher-exporter/query/rancher"
+	"github.com/david-vtuk/prometheus-rancher-exporter/query/rancher-backup"
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 )
 
-type metrics struct {
+type rancherMetrics struct {
 	installedRancherVersion prometheus.GaugeVec
 	latestRancherVersion    prometheus.GaugeVec
-
 	managedClusterCount     prometheus.Gauge
 	managedK3sClusterCount  prometheus.Gauge
 	managedRKEClusterCount  prometheus.Gauge
@@ -22,11 +22,11 @@ type metrics struct {
 	managedGKEClusterCount  prometheus.Gauge
 	managedNodeCount        prometheus.Gauge
 
-	// Cluster level metrics
+	// Cluster level rancherMetrics
 	clusterConditionConnected    prometheus.GaugeVec
 	clusterConditionNotConnected prometheus.GaugeVec
 
-	// Downstream cluster metrics
+	// Downstream cluster rancherMetrics
 	downstreamClusterVersion prometheus.GaugeVec
 
 	// User related
@@ -39,15 +39,23 @@ type metrics struct {
 	projectAnnotations prometheus.GaugeVec
 	projectResources   prometheus.GaugeVec
 
-	// Extended metrics for Rancher CR's
+	// Extended rancherMetrics for Rancher CR's
 	rancherCustomResources prometheus.GaugeVec
 
 	// Additional Node Information
 	managedNodeInfo prometheus.GaugeVec
 }
 
-func new() metrics {
-	m := metrics{
+type rancherBackupMetrics struct {
+	backupCount     prometheus.Gauge
+	restoreCount    prometheus.Gauge
+	restoreSetCount prometheus.Gauge
+	backup          prometheus.GaugeVec
+	restore         prometheus.GaugeVec
+}
+
+func initRancherMetrics() rancherMetrics {
+	m := rancherMetrics{
 
 		installedRancherVersion: *prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Name: "installed_rancher_version",
@@ -194,10 +202,42 @@ func new() metrics {
 	return m
 }
 
-func Collect(client rancher.Client, Timer_GetLatestRancherVersion int, Timer_ticker int) {
+func initRancherBackupMetrics() rancherBackupMetrics {
+	rBackupMetrics := rancherBackupMetrics{
+		backupCount: prometheus.NewGauge(prometheus.GaugeOpts{
+			Name: "rancher_backups_count",
+			Help: "number of rancher backups",
+		}),
+		restoreCount: prometheus.NewGauge(prometheus.GaugeOpts{
+			Name: "rancher_restore_count",
+			Help: "number of rancher restore",
+		}),
+		restoreSetCount: prometheus.NewGauge(prometheus.GaugeOpts{
+			Name: "rancher_restore_set_count",
+			Help: "number of rancher restore sets",
+		}),
+		backup: *prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Name: "rancher_backup",
+			Help: "details regarding a specific backup operation",
+		}, []string{"name", "resourceSetName", "retentionCount", "backupType", "status", "filename", "storageLocation"}),
+	}
 
-	// Consider putting this into a separate module
-	m := new()
+	prometheus.MustRegister(rBackupMetrics.backupCount)
+	prometheus.MustRegister(rBackupMetrics.restoreCount)
+	prometheus.MustRegister(rBackupMetrics.restoreSetCount)
+	prometheus.MustRegister(rBackupMetrics.backup)
+
+	rBackupMetrics.backupCount.Set(0)
+	rBackupMetrics.restoreCount.Set(0)
+	rBackupMetrics.restoreSetCount.Set(0)
+	rBackupMetrics.backup.Reset()
+
+	return rBackupMetrics
+}
+
+func Collect(client rancher.Client, Timer_GetLatestRancherVersion int, Timer_ticker int, rancherInstalled bool, rancherBackupInstalled bool) {
+
+	baseMetrics := initRancherMetrics()
 
 	// GitHub API request limits necessitate polling at a different interval
 
@@ -206,7 +246,7 @@ func Collect(client rancher.Client, Timer_GetLatestRancherVersion int, Timer_tic
 
 		for ; ; <-ticker.C {
 
-			m.latestRancherVersion.Reset()
+			baseMetrics.latestRancherVersion.Reset()
 
 			latestVers, err := client.GetLatestRancherVersion()
 
@@ -214,7 +254,7 @@ func Collect(client rancher.Client, Timer_GetLatestRancherVersion int, Timer_tic
 				log.Errorf("error retrieving latest Rancher version: %v", err)
 			}
 
-			m.latestRancherVersion.WithLabelValues(latestVers).Set(1)
+			baseMetrics.latestRancherVersion.WithLabelValues(latestVers).Set(1)
 		}
 	}()
 
@@ -222,28 +262,33 @@ func Collect(client rancher.Client, Timer_GetLatestRancherVersion int, Timer_tic
 
 	for ; ; <-ticker.C {
 
-		resetGaugeVecMetrics(m)
-		log.Info("updating rancher metrics")
+		resetGaugeVecMetrics(baseMetrics)
+		log.Info("updating rancher baseMetrics")
 
-		go getInstalledRancherVersion(client, m)
-		go getClusterConnectedState(client, m)
-		go getNumberOfClusters(client, m)
-		go getDistributions(client, m)
-		go getNumberOfNodes(client, m)
-		go getDownstreamClusterVersions(client, m)
-		go getNumberOfTokens(client, m)
-		go getNumberOfUsers(client, m)
-		go getNumberOfProjects(client, m)
-		go getProjectLabels(client, m)
-		go getProjectAnnotations(client, m)
-		go getProjectResources(client, m)
-		go getRancherCustomResources(client, m)
-		go getNodeInfo(client, m)
+		go getInstalledRancherVersion(client, baseMetrics)
+		go getClusterConnectedState(client, baseMetrics)
+		go getNumberOfClusters(client, baseMetrics)
+		go getDistributions(client, baseMetrics)
+		go getNumberOfNodes(client, baseMetrics)
+		go getDownstreamClusterVersions(client, baseMetrics)
+		go getNumberOfTokens(client, baseMetrics)
+		go getNumberOfUsers(client, baseMetrics)
+		go getNumberOfProjects(client, baseMetrics)
+		go getProjectLabels(client, baseMetrics)
+		go getProjectAnnotations(client, baseMetrics)
+		go getProjectResources(client, baseMetrics)
+		go getRancherCustomResources(client, baseMetrics)
+		go getNodeInfo(client, baseMetrics)
+
+		if rancherBackupInstalled {
+			backupMetrics := initRancherBackupMetrics()
+			go getrAN
+
+		}
 	}
-
 }
 
-func getInstalledRancherVersion(client rancher.Client, m metrics) {
+func getInstalledRancherVersion(client rancher.Client, m rancherMetrics) {
 
 	start := time.Now()
 
@@ -257,7 +302,7 @@ func getInstalledRancherVersion(client rancher.Client, m metrics) {
 	log.Debugf("getInstalledRancherVersion metric collection took %s", elapsed)
 }
 
-func getClusterConnectedState(client rancher.Client, m metrics) {
+func getClusterConnectedState(client rancher.Client, m rancherMetrics) {
 	state, err := client.GetClusterConnectedState()
 	if err != nil {
 		log.Errorf("error retrieving cluster connected states: %v", err)
@@ -273,7 +318,7 @@ func getClusterConnectedState(client rancher.Client, m metrics) {
 	}
 }
 
-func getNumberOfClusters(client rancher.Client, m metrics) {
+func getNumberOfClusters(client rancher.Client, m rancherMetrics) {
 	numberOfClusters, err := client.GetNumberOfManagedClusters()
 
 	if err != nil {
@@ -282,7 +327,7 @@ func getNumberOfClusters(client rancher.Client, m metrics) {
 	m.managedClusterCount.Set(float64(numberOfClusters))
 }
 
-func getDistributions(client rancher.Client, m metrics) {
+func getDistributions(client rancher.Client, m rancherMetrics) {
 	distributions, err := client.GetK8sDistributions()
 	if err != nil {
 		log.Errorf("error retrieving cluster k8s distributions: %v", err)
@@ -295,7 +340,7 @@ func getDistributions(client rancher.Client, m metrics) {
 	m.managedGKEClusterCount.Set(float64(distributions["gke"]))
 }
 
-func getNumberOfNodes(client rancher.Client, m metrics) {
+func getNumberOfNodes(client rancher.Client, m rancherMetrics) {
 	numberOfNodes, err := client.GetNumberOfManagedNodes()
 
 	if err != nil {
@@ -305,7 +350,7 @@ func getNumberOfNodes(client rancher.Client, m metrics) {
 	m.managedNodeCount.Set(float64(numberOfNodes))
 }
 
-func getDownstreamClusterVersions(client rancher.Client, m metrics) {
+func getDownstreamClusterVersions(client rancher.Client, m rancherMetrics) {
 	downstreamClusterVersions, err := client.GetDownstreamClusterVersions()
 
 	if err != nil {
@@ -318,7 +363,7 @@ func getDownstreamClusterVersions(client rancher.Client, m metrics) {
 	}
 }
 
-func getNumberOfUsers(client rancher.Client, m metrics) {
+func getNumberOfUsers(client rancher.Client, m rancherMetrics) {
 	users, err := client.GetNumberOfUsers()
 	if err != nil {
 		log.Errorf("error retrieving number of users: %v", err)
@@ -327,7 +372,7 @@ func getNumberOfUsers(client rancher.Client, m metrics) {
 	m.userCount.Set(float64(users))
 }
 
-func getNumberOfTokens(client rancher.Client, m metrics) {
+func getNumberOfTokens(client rancher.Client, m rancherMetrics) {
 	tokens, err := client.GetNumberOfTokens()
 	if err != nil {
 		log.Errorf("error retrieving number of tokens: %v", err)
@@ -336,7 +381,7 @@ func getNumberOfTokens(client rancher.Client, m metrics) {
 	m.tokenCount.Set(float64(tokens))
 }
 
-func getNumberOfProjects(client rancher.Client, m metrics) {
+func getNumberOfProjects(client rancher.Client, m rancherMetrics) {
 	projects, err := client.GetNumberofProjects()
 	if err != nil {
 		log.Errorf("error retrieving number of projects: %v", err)
@@ -345,7 +390,7 @@ func getNumberOfProjects(client rancher.Client, m metrics) {
 	m.projectCount.Set(float64(projects))
 }
 
-func getProjectLabels(client rancher.Client, m metrics) {
+func getProjectLabels(client rancher.Client, m rancherMetrics) {
 	projectLabels, err := client.GetProjectLabels()
 	if err != nil {
 		log.Errorf("error retrieving project labels: %v", err)
@@ -358,7 +403,7 @@ func getProjectLabels(client rancher.Client, m metrics) {
 	}
 }
 
-func getProjectAnnotations(client rancher.Client, m metrics) {
+func getProjectAnnotations(client rancher.Client, m rancherMetrics) {
 	projectAnnotations, err := client.GetProjectAnnotations()
 	if err != nil {
 		log.Errorf("error retrieving project annotations: %v", err)
@@ -369,7 +414,7 @@ func getProjectAnnotations(client rancher.Client, m metrics) {
 	}
 }
 
-func getProjectResources(client rancher.Client, m metrics) {
+func getProjectResources(client rancher.Client, m rancherMetrics) {
 	projectResources, err := client.GetProjectResourceQuota()
 	if err != nil {
 		log.Errorf("error retrieving project resources: %v", err)
@@ -379,7 +424,7 @@ func getProjectResources(client rancher.Client, m metrics) {
 	}
 }
 
-func getRancherCustomResources(client rancher.Client, m metrics) {
+func getRancherCustomResources(client rancher.Client, m rancherMetrics) {
 	resources, err := client.GetRancherCustomResourceCount()
 	if err != nil {
 		return
@@ -389,7 +434,7 @@ func getRancherCustomResources(client rancher.Client, m metrics) {
 	}
 }
 
-func getNodeInfo(client rancher.Client, m metrics) {
+func getNodeInfo(client rancher.Client, m rancherMetrics) {
 	nodeResources, err := client.GetManagedNodeInfo()
 	if err != nil {
 		return
@@ -402,8 +447,12 @@ func getNodeInfo(client rancher.Client, m metrics) {
 	}
 }
 
+func getNumberOfBackups(client rancher.Client, m rancherBackupMetrics) {
+	backups, err client.getnumberofba
+}
+
 // Reset GaugeVecs on each tick - facilitate state transition
-func resetGaugeVecMetrics(m metrics) {
+func resetGaugeVecMetrics(m rancherMetrics) {
 	m.installedRancherVersion.Reset()
 	m.clusterConditionConnected.Reset()
 	m.clusterConditionNotConnected.Reset()

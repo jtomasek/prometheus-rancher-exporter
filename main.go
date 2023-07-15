@@ -90,6 +90,7 @@ func main() {
 	rancherInstalled, rancherBackupsInstalled, err := utils.CheckInstalledRancherApps(RancherClient)
 	if err != nil {
 		fmt.Println(err)
+		os.Exit(1)
 	}
 
 	fmt.Printf("Rancher Installed %s, Rancher Backup Installed %s\n", strconv.FormatBool(rancherInstalled), strconv.FormatBool(rancherBackupsInstalled))
