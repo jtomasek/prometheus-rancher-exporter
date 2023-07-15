@@ -14,12 +14,12 @@ var (
 	restoresetsGVR = schema.GroupVersionResource{Group: "resources.cattle.io", Version: "v1", Resource: "restoresets"}
 )
 
-type backupClient struct {
+type Client struct {
 	Client dynamic.Interface
 	Config *rest.Config
 }
 
-func (r backupClient) GetNumberOfBackups() (int, error) {
+func (r Client) GetNumberOfBackups() (int, error) {
 
 	res, err := r.Client.Resource(backupsGVR).List(context.Background(), v1.ListOptions{})
 	if err != nil {
@@ -29,7 +29,7 @@ func (r backupClient) GetNumberOfBackups() (int, error) {
 	return len(res.Items), nil
 }
 
-func (r backupClient) GetNumberOfRestores() (int, error) {
+func (r Client) GetNumberOfRestores() (int, error) {
 
 	res, err := r.Client.Resource(restoresGVR).List(context.Background(), v1.ListOptions{})
 	if err != nil {
@@ -39,7 +39,7 @@ func (r backupClient) GetNumberOfRestores() (int, error) {
 	return len(res.Items), nil
 }
 
-func (r backupClient) GetNumberOfRestoreSets() (int, error) {
+func (r Client) GetNumberOfRestoreSets() (int, error) {
 
 	res, err := r.Client.Resource(restoresetsGVR).List(context.Background(), v1.ListOptions{})
 	if err != nil {

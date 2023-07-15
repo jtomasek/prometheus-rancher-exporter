@@ -4,8 +4,8 @@ import (
 	"strconv"
 	"time"
 
+	_ "github.com/david-vtuk/prometheus-rancher-exporter/pkg/types"
 	"github.com/david-vtuk/prometheus-rancher-exporter/query/rancher"
-	"github.com/david-vtuk/prometheus-rancher-exporter/query/rancher-backup"
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 )
@@ -282,7 +282,7 @@ func Collect(client rancher.Client, Timer_GetLatestRancherVersion int, Timer_tic
 
 		if rancherBackupInstalled {
 			backupMetrics := initRancherBackupMetrics()
-			go getrAN
+			go getNumberOfBackups(client, backupMetrics)
 
 		}
 	}
@@ -448,7 +448,8 @@ func getNodeInfo(client rancher.Client, m rancherMetrics) {
 }
 
 func getNumberOfBackups(client rancher.Client, m rancherBackupMetrics) {
-	backups, err client.getnumberofba
+	client.getnumberofba
+
 }
 
 // Reset GaugeVecs on each tick - facilitate state transition

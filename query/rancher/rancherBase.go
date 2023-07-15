@@ -8,11 +8,10 @@ import (
 	"net/http"
 	"regexp"
 
+	_ "github.com/david-vtuk/prometheus-rancher-exporter/pkg/types"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/rest"
 )
 
 var (
@@ -22,11 +21,6 @@ var (
 	tokenGVR   = schema.GroupVersionResource{Group: "management.cattle.io", Version: "v3", Resource: "tokens"}
 	usersGVR   = schema.GroupVersionResource{Group: "management.cattle.io", Version: "v3", Resource: "users"}
 )
-
-type Client struct {
-	Client dynamic.Interface
-	Config *rest.Config
-}
 
 type clusterVersion struct {
 	Name    string
