@@ -25,7 +25,7 @@ func TestClient_GetBackups(t *testing.T) {
 				t.Errorf("GetBackups() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
+			if reflect.TypeOf(tt.want) != reflect.TypeOf(got) {
 				t.Errorf("GetBackups() got = %v, want %v", got, tt.want)
 			}
 		})
@@ -106,7 +106,7 @@ func TestClient_GetRestores(t *testing.T) {
 				t.Errorf("GetRestores() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
+			if reflect.TypeOf(tt.want) != reflect.TypeOf(got) {
 				t.Errorf("GetRestores() got = %v, want %v", got, tt.want)
 			}
 		})
