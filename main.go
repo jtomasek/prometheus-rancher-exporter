@@ -101,7 +101,7 @@ func main() {
 	if rancherInstalled {
 		log.Printf("Collecting Rancher Metrics")
 		http.Handle("/metrics", promhttp.Handler())
-		go collector.Collect(RancherClient, Timer_GetLatestRancherVersion, Timer_ticker, rancherBackupsInstalled)
+		go collector.Collect(RancherClient, Timer_GetLatestRancherVersion, Timer_ticker)
 	}
 
 	if rancherBackupsInstalled {
