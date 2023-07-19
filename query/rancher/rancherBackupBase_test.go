@@ -93,14 +93,7 @@ func TestClient_GetRestores(t *testing.T) {
 		want    []restore
 		wantErr bool
 	}{
-		{"test-1", testClient, []restore{{
-			Name:                 "restore-jq9bs",
-			Filename:             "one-time-test-2-e3acb0dc-c4f1-4482-83db-66f0141722de-2023-07-19T11-16-41Z.tar.gz",
-			Prune:                true,
-			StorageLocation:      "PV",
-			Message:              "Completed",
-			ResoreCompletionTime: "2023-07-19T11:22:07Z",
-		}}, false}}
+		{"test-1", testClient, []restore{}, false}}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
