@@ -200,7 +200,7 @@ func (r Client) GetProjectResourceQuota() ([]projectResource, error) {
 	return projectResourceArray, err
 }
 
-// Projects return the cluster ID (ie c-m-xwf4csvg). Helper function used to lookup the display name
+// Projects return the cluster ID (ie c-m-xwf4csvg). Helper function used to lookup the display Name
 // as well as it's referencing a valid, existing cluster
 func (r Client) clusterIdToName(id string) (string, error) {
 

@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/rest"
 	"net"
 	"net/http"
 	"regexp"
@@ -11,8 +13,6 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/rest"
 )
 
 var (
@@ -273,7 +273,7 @@ func (r Client) GetClusterConnectedState() (map[string]bool, error) {
 	// Iterate through each cluster management object
 	for _, cluster := range res.Items {
 
-		// Grab Cluster name
+		// Grab Cluster Name
 		clusterName, _, err := unstructured.NestedString(cluster.Object, "spec", "displayName")
 
 		if err != nil {
@@ -291,7 +291,7 @@ func (r Client) GetClusterConnectedState() (map[string]bool, error) {
 			// Iterate through each status slice to determine if cluster is connected
 			for _, value := range statusSlice {
 
-				// Determine whether we find both conditions in each status message
+				// Determine whether we find both conditions in each status Message
 				// We're looking for both when type == connected and status == true
 				// to identify if a cluster is connected to this Rancher instance
 
@@ -334,7 +334,7 @@ func (r Client) GetDownstreamClusterVersions() ([]clusterVersion, error) {
 	// Iterate through each cluster management object
 	for _, cluster := range res.Items {
 
-		// Grab Cluster name
+		// Grab Cluster Name
 		clusterName, _, err := unstructured.NestedString(cluster.Object, "spec", "displayName")
 
 		if err != nil {

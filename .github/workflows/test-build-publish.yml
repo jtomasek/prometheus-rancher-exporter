@@ -81,6 +81,12 @@ jobs:
       - name: Add fake cluster
         run : ./.github/scripts/create-fake-cluster.sh
 
+      - name: Add fake Backup
+        run : ./.github/scripts/create-fake-backup.sh
+
+      - name: Add fake Restore
+        run : ./.github/scripts/create-fake-restore.sh
+
       - name: Wait for env to settle
         run : sleep 60
 
