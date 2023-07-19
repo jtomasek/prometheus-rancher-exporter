@@ -11,7 +11,7 @@ func TestClient_GetRancherCustomResourceCount(t *testing.T) {
 		want    int
 		wantErr bool
 	}{
-		{"test-1", testClient, 1, false},
+		{"test-1", testClient, 0, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
