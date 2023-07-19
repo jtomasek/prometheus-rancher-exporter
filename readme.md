@@ -19,7 +19,8 @@
 `./manifests/grafana-dashboard` includes a basic dashboard in JSON format that can be imported into Grafana.  
 `./manifests/grafana-dashboard-projects.json` includes a Rancher project-focused dashboard in JSON format that can be imported into Grafana.  
 `./manifests/grafana-dashboard-all-cr.json` includes a dynamic dashboard showing counts for all Rancher custom resources (*.cattle.io).  
-`./manifests/grafana-dashboard-nodes.json` includes a dynaic dashboard showing global node metadata across all managed clusters (ie Kernel/OS versions, roles, etc)  
+`./manifests/grafana-dashboard-nodes.json` includes a dynamic dashboard showing global node metadata across all managed clusters (ie Kernel/OS versions, roles, etc)  
+`./manifests/grafana-dashboard-backups-json` includes a dynamic dashboard showing details about Rancher backup operator jobs.
 
 # Example Screenshots  
 
@@ -27,6 +28,7 @@
 ![img.png](img/proj-dashboard.png)
 ![img.png](img/cr-dashboard.png)
 ![image](https://github.com/David-VTUK/prometheus-rancher-exporter/assets/5892615/ffae3d27-0980-4781-953e-05014a17a55d)
+![img.png](backups/img.png)
 
 # Developing
 
