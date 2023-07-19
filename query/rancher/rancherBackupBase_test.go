@@ -1,8 +1,6 @@
 package rancher
 
 import (
-	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/rest"
 	"reflect"
 	"testing"
 )
@@ -14,8 +12,18 @@ func TestClient_GetBackups(t *testing.T) {
 		want    []backup
 		wantErr bool
 	}{
-		// TODO: Add test cases.
-	}
+		{"test-1", testClient, []backup{{
+			Name:            "test-recurring",
+			ResourceSetName: "rancher-resource-set",
+			RetentionCount:  10,
+			BackupType:      "Recurring",
+			Message:         "Completed",
+			Filename:        "test-recurring-e3acb0dc-c4f1-4482-83db-66f0141722de-2023-07-19T00-00-00Z.tar.gz",
+			LastSnapshot:    "2023-07-19T00:00:09Z",
+			NextSnapshot:    "2023-07-20T00:00:00Z",
+			StorageLocation: "PV",
+		}}, false}}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			r := Client{
@@ -35,17 +43,13 @@ func TestClient_GetBackups(t *testing.T) {
 }
 
 func TestClient_GetNumberOfBackups(t *testing.T) {
-	type fields struct {
-		Client dynamic.Interface
-		Config *rest.Config
-	}
 	tests := []struct {
 		name    string
 		fields  fields
 		want    int
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{"test-1", testClient, 1, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -66,17 +70,13 @@ func TestClient_GetNumberOfBackups(t *testing.T) {
 }
 
 func TestClient_GetNumberOfRestores(t *testing.T) {
-	type fields struct {
-		Client dynamic.Interface
-		Config *rest.Config
-	}
 	tests := []struct {
 		name    string
 		fields  fields
 		want    int
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{"test-1", testClient, 1, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -97,18 +97,21 @@ func TestClient_GetNumberOfRestores(t *testing.T) {
 }
 
 func TestClient_GetRestores(t *testing.T) {
-	type fields struct {
-		Client dynamic.Interface
-		Config *rest.Config
-	}
 	tests := []struct {
 		name    string
 		fields  fields
 		want    []restore
 		wantErr bool
 	}{
-		// TODO: Add test cases.
-	}
+		{"test-1", testClient, []restore{{
+			Name:                 "restore-jq9bs",
+			Filename:             "one-time-test-2-e3acb0dc-c4f1-4482-83db-66f0141722de-2023-07-19T11-16-41Z.tar.gz",
+			Prune:                true,
+			StorageLocation:      "PV",
+			Message:              "Completed",
+			ResoreCompletionTime: "2023-07-19T11:22:07Z",
+		}}, false}}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			r := Client{
