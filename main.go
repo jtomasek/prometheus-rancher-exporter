@@ -94,15 +94,18 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Printf("Rancher Installed %s, Rancher Backup Installed %s\n", strconv.FormatBool(rancherInstalled), strconv.FormatBool(rancherBackupsInstalled))
+	log.Printf("Detected Rancher: %s", strconv.FormatBool(rancherInstalled))
+	log.Printf("Detected Rancher Backup Operator: %s", strconv.FormatBool(rancherBackupsInstalled))
 
 	//Kick off collector in background
 	if rancherInstalled {
+		log.Printf("Collecting Rancher Metrics")
 		http.Handle("/metrics", promhttp.Handler())
 		go collector.Collect(RancherClient, Timer_GetLatestRancherVersion, Timer_ticker, rancherBackupsInstalled)
 	}
 
 	if rancherBackupsInstalled {
+		log.Printf("Collecting Rancher Backup Operator Metrics")
 		reg := prometheus.NewRegistry()
 		backupsHandler := promhttp.HandlerFor(reg, promhttp.HandlerOpts{})
 		http.Handle("/backup-metrics", backupsHandler)
