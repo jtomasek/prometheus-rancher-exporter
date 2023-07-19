@@ -232,30 +232,28 @@ func initRancherBackupMetrics(reg *prometheus.Registry) rancherBackupMetrics {
 	return rBackupMetrics
 }
 
-func Collect(client rancher.Client, Timer_GetLatestRancherVersion int, Timer_ticker int, rancherBackupInstalled bool) {
+func Collect(client rancher.Client, Timer_GetLatestRancherVersion int, Timer_ticker int) {
 
 	baseMetrics := initRancherMetrics()
 
 	// GitHub API request limits necessitate polling at a different interval
-	/*
-		go func() {
-			ticker := time.NewTicker(time.Duration(Timer_GetLatestRancherVersion) * time.Minute)
 
-			for ; ; <-ticker.C {
+	go func() {
+		ticker := time.NewTicker(time.Duration(Timer_GetLatestRancherVersion) * time.Minute)
 
-				baseMetrics.latestRancherVersion.Reset()
+		for ; ; <-ticker.C {
 
-				latestVers, err := client.GetLatestRancherVersion()
+			baseMetrics.latestRancherVersion.Reset()
 
-				if err != nil {
-					log.Errorf("error retrieving latest Rancher version: %v", err)
-				}
+			latestVers, err := client.GetLatestRancherVersion()
 
-				baseMetrics.latestRancherVersion.WithLabelValues(latestVers).Set(1)
+			if err != nil {
+				log.Errorf("error retrieving latest Rancher version: %v", err)
 			}
-		}()
 
-	*/
+			baseMetrics.latestRancherVersion.WithLabelValues(latestVers).Set(1)
+		}
+	}()
 
 	ticker := time.NewTicker(time.Duration(Timer_ticker) * time.Second)
 
@@ -289,6 +287,8 @@ func CollectBackupMetrics(client rancher.Client, Timer_ticker int, reg *promethe
 	ticker := time.NewTicker(time.Duration(Timer_ticker) * time.Second)
 
 	for ; ; <-ticker.C {
+
+		resetBackupGaugeVecMetrics(backupMetrics)
 		go getNumberOfBackups(client, backupMetrics)
 		go getNumberOfRestores(client, backupMetrics)
 		go getBackups(client, backupMetrics)
@@ -506,4 +506,9 @@ func resetGaugeVecMetrics(m rancherMetrics) {
 	m.projectAnnotations.Reset()
 	m.projectResources.Reset()
 	m.managedNodeInfo.Reset()
+}
+
+func resetBackupGaugeVecMetrics(m rancherBackupMetrics) {
+	m.backup.Reset()
+	m.restore.Reset()
 }
