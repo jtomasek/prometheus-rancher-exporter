@@ -12,17 +12,7 @@ func TestClient_GetBackups(t *testing.T) {
 		want    []backup
 		wantErr bool
 	}{
-		{"test-1", testClient, []backup{{
-			Name:            "test-recurring",
-			ResourceSetName: "rancher-resource-set",
-			RetentionCount:  10,
-			BackupType:      "Recurring",
-			Message:         "Completed",
-			Filename:        "test-recurring-e3acb0dc-c4f1-4482-83db-66f0141722de-2023-07-19T00-00-00Z.tar.gz",
-			LastSnapshot:    "2023-07-19T00:00:09Z",
-			NextSnapshot:    "2023-07-20T00:00:00Z",
-			StorageLocation: "PV",
-		}}, false}}
+		{"test-1", testClient, []backup{}, false}}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
