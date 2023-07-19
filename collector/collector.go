@@ -213,19 +213,20 @@ func initRancherBackupMetrics(reg *prometheus.Registry) rancherBackupMetrics {
 			Name: "rancher_restore_count",
 			Help: "number of rancher restore",
 		}),
-		restoreSetCount: promauto.With(reg).NewGauge(prometheus.GaugeOpts{
-			Name: "rancher_restore_set_count",
-			Help: "number of rancher restore sets",
-		}),
 		backup: *promauto.With(reg).NewGaugeVec(prometheus.GaugeOpts{
 			Name: "rancher_backup",
 			Help: "details regarding a specific backup operation",
-		}, []string{"name", "resourceSetName", "retentionCount", "backupType", "status", "filename", "storageLocation"}),
+		}, []string{"name", "resourceSetName", "retentionCount", "backupType", "status", "filename", "storageLocation", "nextSnapshot", "lastSnapshot"},
+		),
+		restore: *promauto.With(reg).NewGaugeVec(prometheus.GaugeOpts{
+			Name: "rancher_restore",
+			Help: "details regarding a specific restore operation",
+		}, []string{"name", "fileName", "prune", "storageLocation", "status", "restoreTime"},
+		),
 	}
 
 	rBackupMetrics.backupCount.Set(0)
 	rBackupMetrics.restoreCount.Set(0)
-	rBackupMetrics.restoreSetCount.Set(0)
 	rBackupMetrics.backup.Reset()
 
 	return rBackupMetrics
@@ -289,7 +290,9 @@ func CollectBackupMetrics(client rancher.Client, Timer_ticker int, reg *promethe
 
 	for ; ; <-ticker.C {
 		go getNumberOfBackups(client, backupMetrics)
+		go getNumberOfRestores(client, backupMetrics)
 		go getBackups(client, backupMetrics)
+		go getRestores(client, backupMetrics)
 	}
 
 }
@@ -462,6 +465,15 @@ func getNumberOfBackups(client rancher.Client, m rancherBackupMetrics) {
 	m.backupCount.Set(float64(backups))
 }
 
+func getNumberOfRestores(client rancher.Client, m rancherBackupMetrics) {
+	restores, err := client.GetNumberOfRestores()
+	if err != nil {
+		log.Errorf("error retrieving number of restores: %v", err)
+	}
+
+	m.restoreCount.Set(float64(restores))
+}
+
 func getBackups(client rancher.Client, m rancherBackupMetrics) {
 	backups, err := client.GetBackups()
 	if err != nil {
@@ -469,9 +481,18 @@ func getBackups(client rancher.Client, m rancherBackupMetrics) {
 	}
 
 	for _, value := range backups {
+		m.backup.WithLabelValues(value.Name, value.ResourceSetName, strconv.FormatInt(value.RetentionCount, 10), value.BackupType, value.Message, value.Filename, value.StorageLocation, value.NextSnapshot, value.LastSnapshot).Set(1)
+	}
+}
 
-		//[]string{"name", "resourceSetName", "retentionCount", "backupType", "status", "filename", "storageLocation"}),
-		m.backup.WithLabelValues(value.Name, value.ResourceSetName, strconv.FormatInt(value.RetentionCount, 10), value.BackupType, value.Message, value.Filename, value.StorageLocation)
+func getRestores(client rancher.Client, m rancherBackupMetrics) {
+	restores, err := client.GetRestores()
+	if err != nil {
+		log.Errorf("error retrieving backups: %v", err)
+	}
+
+	for _, value := range restores {
+		m.restore.WithLabelValues(value.Name, value.Filename, strconv.FormatBool(value.Prune), value.StorageLocation, value.Message, value.ResoreCompletionTime).Set(1)
 	}
 }
 

@@ -8,9 +8,8 @@ import (
 )
 
 var (
-	backupsGVR     = schema.GroupVersionResource{Group: "resources.cattle.io", Version: "v1", Resource: "backups"}
-	restoresGVR    = schema.GroupVersionResource{Group: "resources.cattle.io", Version: "v1", Resource: "restores"}
-	restoresetsGVR = schema.GroupVersionResource{Group: "resources.cattle.io", Version: "v1", Resource: "restoresets"}
+	backupsGVR  = schema.GroupVersionResource{Group: "resources.cattle.io", Version: "v1", Resource: "backups"}
+	restoresGVR = schema.GroupVersionResource{Group: "resources.cattle.io", Version: "v1", Resource: "restores"}
 )
 
 type backup struct {
@@ -20,8 +19,18 @@ type backup struct {
 	BackupType      string
 	Message         string
 	Filename        string
+	LastSnapshot    string
 	NextSnapshot    string
 	StorageLocation string
+}
+
+type restore struct {
+	Name                 string
+	Filename             string
+	Prune                bool
+	StorageLocation      string
+	Message              string
+	ResoreCompletionTime string
 }
 
 func (r Client) GetNumberOfBackups() (int, error) {
@@ -44,21 +53,12 @@ func (r Client) GetNumberOfRestores() (int, error) {
 	return len(res.Items), nil
 }
 
-func (r Client) GetNumberOfRestoreSets() (int, error) {
-
-	res, err := r.Client.Resource(restoresetsGVR).List(context.Background(), v1.ListOptions{})
-	if err != nil {
-		return 0, err
-	}
-
-	return len(res.Items), nil
-}
-
 func (r Client) GetBackups() ([]backup, error) {
 
 	var backups []backup
 	var backupMessage string
 	var backupNextSnapshot string
+	var backupLastSnapshot string
 
 	res, err := r.Client.Resource(backupsGVR).List(context.Background(), v1.ListOptions{})
 
@@ -97,6 +97,8 @@ func (r Client) GetBackups() ([]backup, error) {
 			}
 		}
 
+		backupLastSnapshot, _, err = unstructured.NestedString(backupJob.Object, "status", "lastSnapshotTs")
+
 		backupStorageLocation, _, err := unstructured.NestedString(backupJob.Object, "status", "storageLocation")
 		if err != nil {
 			return nil, err
@@ -121,10 +123,72 @@ func (r Client) GetBackups() ([]backup, error) {
 			Message:         backupMessage,
 			Filename:        backupFileName,
 			NextSnapshot:    backupNextSnapshot,
+			LastSnapshot:    backupLastSnapshot,
 			StorageLocation: backupStorageLocation,
 		}
 
 		backups = append(backups, backupInfo)
 	}
 	return backups, nil
+}
+
+func (r Client) GetRestores() ([]restore, error) {
+	var restores []restore
+	var restoreMessage string
+
+	res, err := r.Client.Resource(restoresGVR).List(context.Background(), v1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	for _, restoreJob := range res.Items {
+
+		restoreName, _, err := unstructured.NestedString(restoreJob.Object, "metadata", "name")
+		if err != nil {
+			return nil, err
+		}
+
+		fileName, _, err := unstructured.NestedString(restoreJob.Object, "spec", "backupFilename")
+		if err != nil {
+			return nil, err
+		}
+
+		prune, _, err := unstructured.NestedBool(restoreJob.Object, "spec", "prune")
+		if err != nil {
+			return nil, err
+		}
+
+		restoreStorageLocation, _, err := unstructured.NestedString(restoreJob.Object, "status", "backupSource")
+		if err != nil {
+			return nil, err
+		}
+
+		statusSlice, _, err := unstructured.NestedSlice(restoreJob.Object, "status", "conditions")
+		for _, value := range statusSlice {
+			for k, v := range value.(map[string]interface{}) {
+				if k == "message" {
+					restoreMessage = v.(string)
+				}
+			}
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		restoreTime, _, err := unstructured.NestedString(restoreJob.Object, "status", "restoreCompletionTs")
+		if err != nil {
+			return nil, err
+		}
+
+		restoreInfo := restore{
+			Name:                 restoreName,
+			Filename:             fileName,
+			Prune:                prune,
+			StorageLocation:      restoreStorageLocation,
+			Message:              restoreMessage,
+			ResoreCompletionTime: restoreTime,
+		}
+		restores = append(restores, restoreInfo)
+	}
+	return restores, nil
 }

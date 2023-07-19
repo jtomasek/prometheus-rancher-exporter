@@ -10,6 +10,16 @@ kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.5
 kubectl wait --for=condition=Available deployment --timeout=2m -n cert-manager --all
 
 helm repo add rancher-latest https://releases.rancher.com/server-charts/latest
+helm repo add rancher-charts https://charts.rancher.io
+
+helm install --wait \
+    --create-namespace -n cattle-resources-system \
+    rancher-backup-crd rancher-charts/rancher-backup-crd
+helm install --wait \
+    -n cattle-resources-system \
+    rancher-backup rancher-charts/rancher-backup
+
+
 # set CATTLE_SERVER_URL and CATTLE_BOOTSTRAP_PASSWORD to get rancher out of "bootstrap" mode
 helm upgrade rancher rancher-latest/rancher \
   --install --wait \
@@ -23,6 +33,9 @@ helm upgrade rancher rancher-latest/rancher \
   --set "extraEnv[1].value=rancherpassword"
 # wait for deployment of rancher
 kubectl -n cattle-system rollout status deploy/rancher
+
+
+
 # wait for rancher to create fleet namespace, deployment and controller
 { grep -q -m 1 "fleet"; kill $!; } < <(kubectl get deployments -n cattle-fleet-system -w)
 kubectl -n cattle-fleet-system rollout status deploy/fleet-controller
