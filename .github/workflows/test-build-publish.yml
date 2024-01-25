@@ -133,7 +133,7 @@ jobs:
       - name: Retrieve latest Docker image version
         id: get_version
         run: |
-          echo "image_version=$(curl -s "https://registry.hub.docker.com/v2/repositories/virtualthoughts/prometheus-rancher-exporter/tags/" | jq -r '.results[].name' | grep -v latest | sort -V | tail -n 1)" >> $GITHUB_OUTPUT
+          echo "image_version=$(curl -s "https://registry.hub.docker.com/v2/repositories/jirkatomasek/prometheus-rancher-exporter/tags/" | jq -r '.results[].name' | grep -v latest | sort -V | tail -n 1)" >> $GITHUB_OUTPUT
 
       - name: Increment version
         id: increment_version
@@ -147,8 +147,8 @@ jobs:
           context: .
           push: true
           tags: |
-            virtualthoughts/prometheus-rancher-exporter:${{ steps.increment_version.outputs.updated_version }}
-            virtualthoughts/prometheus-rancher-exporter:latest
+            jirkatomasek/prometheus-rancher-exporter:${{ steps.increment_version.outputs.updated_version }}
+            jirkatomasek/prometheus-rancher-exporter:latest
 
       - name: Update Kubernetes YAML manifest
         run: |
@@ -158,7 +158,7 @@ jobs:
           sudo mv yq /usr/local/bin/
           
           # Find and update the image tag in the YAML file
-          IMAGE_NAME="virtualthoughts/prometheus-rancher-exporter"
+          IMAGE_NAME="jirkatomasek/prometheus-rancher-exporter"
           NEW_TAG="${{ steps.increment_version.outputs.updated_version }}"
           OLD_TAG=$(yq eval '.spec.template.spec.containers[] | select(.name == "rancher-exporter").image' manifests/exporter.yaml | cut -d":" -f2)
           NEW_IMAGE="${IMAGE_NAME}:${NEW_TAG}"
