@@ -1,9 +1,10 @@
 package collector
 
 import (
-	"github.com/prometheus/client_golang/prometheus/promauto"
 	"strconv"
 	"time"
+
+	"github.com/prometheus/client_golang/prometheus/promauto"
 
 	"github.com/david-vtuk/prometheus-rancher-exporter/query/rancher"
 	"github.com/prometheus/client_golang/prometheus"
@@ -28,6 +29,7 @@ type rancherMetrics struct {
 
 	// Downstream cluster rancherMetrics
 	downstreamClusterVersion prometheus.GaugeVec
+	downstreamClusterStatus  prometheus.GaugeVec
 
 	// User related
 	tokenCount prometheus.Gauge
@@ -151,6 +153,11 @@ func initRancherMetrics() rancherMetrics {
 		}, []string{"name", "parent_cluster", "is_control_plane", "is_etcd", "is_worker", "architecture",
 			"container_runtime_version", "kernel_version", "os", "os_image"},
 		),
+		downstreamClusterStatus: *prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Name: "rancher_cluster_status",
+			Help: "Status of the downstream cluster",
+		}, []string{"Name", "DisplayName", "Version", "RancherServerURL"},
+		),
 	}
 
 	prometheus.MustRegister(m.installedRancherVersion)
@@ -167,6 +174,7 @@ func initRancherMetrics() rancherMetrics {
 	prometheus.MustRegister(m.clusterConditionNotConnected)
 
 	prometheus.MustRegister(m.downstreamClusterVersion)
+	prometheus.MustRegister(m.downstreamClusterStatus)
 
 	prometheus.MustRegister(m.tokenCount)
 	prometheus.MustRegister(m.userCount)
@@ -192,6 +200,7 @@ func initRancherMetrics() rancherMetrics {
 	m.clusterConditionNotConnected.Reset()
 
 	m.downstreamClusterVersion.Reset()
+	m.downstreamClusterStatus.Reset()
 
 	m.tokenCount.Set(0)
 	m.userCount.Set(0)
@@ -268,6 +277,7 @@ func Collect(client rancher.Client, Timer_GetLatestRancherVersion int, Timer_tic
 		go getDistributions(client, baseMetrics)
 		go getNumberOfNodes(client, baseMetrics)
 		go getDownstreamClusterVersions(client, baseMetrics)
+		go getDownstreamClusterStates(client, baseMetrics)
 		go getNumberOfTokens(client, baseMetrics)
 		go getNumberOfUsers(client, baseMetrics)
 		go getNumberOfProjects(client, baseMetrics)
@@ -496,12 +506,27 @@ func getRestores(client rancher.Client, m rancherBackupMetrics) {
 	}
 }
 
+func getDownstreamClusterStates(client rancher.Client, m rancherMetrics) {
+	rancherServerURL, err := client.GetRancherServerUrl()
+	downstreamClustersInfo, err := client.GetDownstreamClustersInfo()
+
+	if err != nil {
+		log.Errorf("error retrieving downstream k8s cluster info: %v", err)
+	}
+
+	for _, value := range downstreamClustersInfo {
+
+		m.downstreamClusterStatus.WithLabelValues(value.Name, value.DisplayName, value.Version, rancherServerURL).Set(1)
+	}
+}
+
 // Reset GaugeVecs on each tick - facilitate state transition
 func resetGaugeVecMetrics(m rancherMetrics) {
 	m.installedRancherVersion.Reset()
 	m.clusterConditionConnected.Reset()
 	m.clusterConditionNotConnected.Reset()
 	m.downstreamClusterVersion.Reset()
+	m.downstreamClusterStatus.Reset()
 	m.projectLabels.Reset()
 	m.projectAnnotations.Reset()
 	m.projectResources.Reset()

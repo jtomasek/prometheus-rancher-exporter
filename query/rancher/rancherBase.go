@@ -4,11 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/rest"
 	"net"
 	"net/http"
 	"regexp"
+
+	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/rest"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -31,6 +32,12 @@ type Client struct {
 type clusterVersion struct {
 	Name    string
 	Version string
+}
+
+type clusterInfo struct {
+	Name        string
+	DisplayName string
+	Version     string
 }
 
 type projectLabel struct {
@@ -392,4 +399,57 @@ func (r Client) GetNumberOfUsers() (int, error) {
 	}
 
 	return users, nil
+}
+
+func (r Client) GetRancherServerUrl() (string, error) {
+
+	res, err := r.Client.Resource(settingGVR).Get(context.Background(), "server-url", v1.GetOptions{})
+	if err != nil {
+		return "", err
+	}
+
+	url, _, err := unstructured.NestedString(res.UnstructuredContent(), "value")
+	if err != nil {
+		return "", err
+	}
+	return url, nil
+}
+
+func (r Client) GetDownstreamClustersInfo() ([]clusterInfo, error) {
+
+	var clusterInfos []clusterInfo
+
+	res, err := r.Client.Resource(clusterGVR).List(context.Background(), v1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	// Iterate through each cluster management object
+	for _, cluster := range res.Items {
+
+		// Grab Cluster Name
+		displayName, _, err := unstructured.NestedString(cluster.Object, "spec", "displayName")
+		name, _, err := unstructured.NestedString(cluster.Object, "metadata", "name")
+
+		if err != nil {
+			return nil, err
+		}
+
+		clusterK8sVersion, _, err := unstructured.NestedString(cluster.Object, "status", "version", "gitVersion")
+
+		if err != nil {
+			return nil, err
+		}
+
+		clusterInfo := clusterInfo{
+			Name:        name,
+			DisplayName: displayName,
+			Version:     clusterK8sVersion,
+		}
+
+		clusterInfos = append(clusterInfos, clusterInfo)
+	}
+
+	return clusterInfos, nil
+
 }
