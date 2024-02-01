@@ -24,8 +24,13 @@ type rancherMetrics struct {
 	managedNodeCount        prometheus.Gauge
 
 	// Cluster level rancherMetrics
-	clusterConditionConnected    prometheus.GaugeVec
-	clusterConditionNotConnected prometheus.GaugeVec
+	clusterConditionConnected      prometheus.GaugeVec
+	clusterConditionNotConnected   prometheus.GaugeVec
+	clusterConditionPending        prometheus.GaugeVec
+	clusterConditionWaiting        prometheus.GaugeVec
+	clusterConditionDiskPressure   prometheus.GaugeVec
+	clusterConditionMemoryPressure prometheus.GaugeVec
+	clusterConditionReady          prometheus.GaugeVec
 
 	// Downstream cluster rancherMetrics
 	downstreamClusterVersion prometheus.GaugeVec
@@ -158,6 +163,31 @@ func initRancherMetrics() rancherMetrics {
 			Help: "Status of the downstream cluster",
 		}, []string{"Name", "DisplayName", "Version", "RancherServerURL"},
 		),
+		clusterConditionPending: *prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Name: "rancher_cluster_condition_pending",
+			Help: "Identify if a downstream cluster is in Pending state",
+		}, []string{"Name"},
+		),
+		clusterConditionWaiting: *prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Name: "rancher_cluster_condition_waiting",
+			Help: "Identify if a downstream cluster is in Waiting state",
+		}, []string{"Name"},
+		),
+		clusterConditionDiskPressure: *prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Name: "rancher_cluster_condition_disk_pressure",
+			Help: "Identify if a downstream cluster is running out of disk",
+		}, []string{"Name"},
+		),
+		clusterConditionMemoryPressure: *prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Name: "rancher_cluster_condition_memory_pressure",
+			Help: "Identify if a downstream cluster is running out of memory",
+		}, []string{"Name"},
+		),
+		clusterConditionReady: *prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Name: "rancher_cluster_condition_ready",
+			Help: "Identify if a downstream cluster is in Ready state",
+		}, []string{"Name"},
+		),
 	}
 
 	prometheus.MustRegister(m.installedRancherVersion)
@@ -172,6 +202,11 @@ func initRancherMetrics() rancherMetrics {
 	prometheus.MustRegister(m.managedNodeCount)
 	prometheus.MustRegister(m.clusterConditionConnected)
 	prometheus.MustRegister(m.clusterConditionNotConnected)
+	prometheus.MustRegister(m.clusterConditionPending)
+	prometheus.MustRegister(m.clusterConditionWaiting)
+	prometheus.MustRegister(m.clusterConditionDiskPressure)
+	prometheus.MustRegister(m.clusterConditionMemoryPressure)
+	prometheus.MustRegister(m.clusterConditionReady)
 
 	prometheus.MustRegister(m.downstreamClusterVersion)
 	prometheus.MustRegister(m.downstreamClusterStatus)
@@ -198,6 +233,11 @@ func initRancherMetrics() rancherMetrics {
 
 	m.clusterConditionConnected.Reset()
 	m.clusterConditionNotConnected.Reset()
+	m.clusterConditionPending.Reset()
+	m.clusterConditionWaiting.Reset()
+	m.clusterConditionDiskPressure.Reset()
+	m.clusterConditionMemoryPressure.Reset()
+	m.clusterConditionReady.Reset()
 
 	m.downstreamClusterVersion.Reset()
 	m.downstreamClusterStatus.Reset()
@@ -520,11 +560,50 @@ func getDownstreamClusterStates(client rancher.Client, m rancherMetrics) {
 	}
 }
 
+func getClusterConditions(client rancher.Client, m rancherMetrics) {
+	clustersConditions, err := client.GetClusterConditions()
+	if err != nil {
+		log.Errorf("error retrieving cluster connected states: %v", err)
+	}
+	for key, value := range clustersConditions {
+		if value["Pending"] == true {
+			m.clusterConditionPending.WithLabelValues(key).Set(1)
+		} else {
+			m.clusterConditionPending.WithLabelValues(key).Set(0)
+		}
+		if value["Waiting"] == true {
+			m.clusterConditionWaiting.WithLabelValues(key).Set(1)
+		} else {
+			m.clusterConditionWaiting.WithLabelValues(key).Set(0)
+		}
+		if value["DiskPressure"] == true {
+			m.clusterConditionDiskPressure.WithLabelValues(key).Set(1)
+		} else {
+			m.clusterConditionDiskPressure.WithLabelValues(key).Set(0)
+		}
+		if value["MemoryPressure"] == true {
+			m.clusterConditionMemoryPressure.WithLabelValues(key).Set(1)
+		} else {
+			m.clusterConditionMemoryPressure.WithLabelValues(key).Set(0)
+		}
+		if value["Ready"] == true {
+			m.clusterConditionReady.WithLabelValues(key).Set(1)
+		} else {
+			m.clusterConditionReady.WithLabelValues(key).Set(0)
+		}
+	}
+}
+
 // Reset GaugeVecs on each tick - facilitate state transition
 func resetGaugeVecMetrics(m rancherMetrics) {
 	m.installedRancherVersion.Reset()
 	m.clusterConditionConnected.Reset()
 	m.clusterConditionNotConnected.Reset()
+	m.clusterConditionPending.Reset()
+	m.clusterConditionWaiting.Reset()
+	m.clusterConditionDiskPressure.Reset()
+	m.clusterConditionMemoryPressure.Reset()
+	m.clusterConditionReady.Reset()
 	m.downstreamClusterVersion.Reset()
 	m.downstreamClusterStatus.Reset()
 	m.projectLabels.Reset()

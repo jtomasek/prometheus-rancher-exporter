@@ -453,3 +453,95 @@ func (r Client) GetDownstreamClustersInfo() ([]clusterInfo, error) {
 	return clusterInfos, nil
 
 }
+
+func (r Client) GetClusterConditions() (map[string]map[string]bool, error) {
+	clusterConditions := make(map[string]map[string]bool)
+
+	res, err := r.Client.Resource(clusterGVR).List(context.Background(), v1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	// Iterate through each cluster management object
+	for _, cluster := range res.Items {
+
+		// Grab Cluster Name
+		clusterName, _, err := unstructured.NestedString(cluster.Object, "metadata", "name")
+
+		if err != nil {
+			return nil, err
+		}
+
+		// Ignore if it's the "Local" cluster
+		if clusterName != "local" {
+
+			clusterConditions[clusterName] = make(map[string]bool)
+
+			// Grab status.conditions slice from object
+			conditions, _, _ := unstructured.NestedSlice(cluster.Object, "status", "conditions")
+
+			// Iterate through each status slice to determine if cluster is connected
+			for _, value := range conditions {
+
+				// Determine whether we find both conditions in each status Message
+				// We're looking for both when type == connected and status == true
+				// to identify if a cluster is connected to this Rancher instance
+
+				// Reset values when iterating through
+				foundStatus := false
+				foundType := ""
+
+				for k, v := range value.(map[string]interface{}) {
+
+					if k == "type" && v.(string) == "Pending" {
+						foundType = "Pending"
+					}
+
+					if k == "status" {
+						foundStatus = v.(string) == "True"
+					}
+
+					if k == "type" && v.(string) == "Waiting" {
+						foundType = "Waiting"
+					}
+
+					if k == "status" {
+						foundStatus = v.(string) == "True"
+					}
+
+					if k == "type" && v.(string) == "DiskPressure" {
+						foundType = "DiskPressure"
+					}
+
+					if k == "status" {
+						foundStatus = v.(string) == "True"
+					}
+
+					if k == "type" && v.(string) == "MemoryPressure" {
+						foundType = "MemoryPressure"
+					}
+
+					if k == "status" {
+						foundStatus = v.(string) == "True"
+					}
+
+					if k == "type" && v.(string) == "Ready" {
+						foundType = "Ready"
+					}
+
+					if k == "status" {
+						foundStatus = v.(string) == "True"
+					}
+
+					if foundType != "" {
+						clusterConditions[clusterName][foundType] = foundStatus
+					}
+
+				}
+			}
+
+		}
+	}
+
+	return clusterConditions, nil
+}
