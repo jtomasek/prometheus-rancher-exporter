@@ -281,7 +281,8 @@ func (r Client) GetClusterConnectedState() (map[string]bool, error) {
 	for _, cluster := range res.Items {
 
 		// Grab Cluster Name
-		clusterName, _, err := unstructured.NestedString(cluster.Object, "spec", "displayName")
+		// clusterName, _, err := unstructured.NestedString(cluster.Object, "spec", "displayName")
+		clusterName, _, err := unstructured.NestedString(cluster.Object, "metadata", "name")
 
 		if err != nil {
 			return nil, err
