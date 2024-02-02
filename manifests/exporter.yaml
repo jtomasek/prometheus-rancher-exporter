@@ -50,7 +50,7 @@ spec:
       containers:
         - imagePullPolicy: Always
           name: rancher-exporter
-          image: jirkatomasek/prometheus-rancher-exporter:2
+          image: jirkatomasek/prometheus-rancher-exporter:3
           ports:
             - name: metrics
               protocol: TCP
