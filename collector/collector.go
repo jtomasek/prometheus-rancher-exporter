@@ -186,7 +186,7 @@ func initRancherMetrics() rancherMetrics {
 		clusterConditionReady: *prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Name: "rancher_cluster_condition_ready",
 			Help: "Identify if a downstream cluster is in Ready state",
-		}, []string{"Name"},
+		}, []string{"Name", "Reason", "Message"},
 		),
 	}
 
@@ -567,30 +567,30 @@ func getClusterConditions(client rancher.Client, m rancherMetrics) {
 		log.Errorf("error retrieving cluster connected states: %v", err)
 	}
 	for key, value := range clustersConditions {
-		if value["Pending"] == true {
+		if value["Pending"].Status == true {
 			m.clusterConditionPending.WithLabelValues(key).Set(1)
 		} else {
 			m.clusterConditionPending.WithLabelValues(key).Set(0)
 		}
-		if value["Waiting"] == true {
+		if value["Waiting"].Status == true {
 			m.clusterConditionWaiting.WithLabelValues(key).Set(1)
 		} else {
 			m.clusterConditionWaiting.WithLabelValues(key).Set(0)
 		}
-		if value["DiskPressure"] == true {
+		if value["DiskPressure"].Status == true {
 			m.clusterConditionDiskPressure.WithLabelValues(key).Set(1)
 		} else {
 			m.clusterConditionDiskPressure.WithLabelValues(key).Set(0)
 		}
-		if value["MemoryPressure"] == true {
+		if value["MemoryPressure"].Status == true {
 			m.clusterConditionMemoryPressure.WithLabelValues(key).Set(1)
 		} else {
 			m.clusterConditionMemoryPressure.WithLabelValues(key).Set(0)
 		}
-		if value["Ready"] == true {
-			m.clusterConditionReady.WithLabelValues(key).Set(1)
+		if value["Ready"].Status == true {
+			m.clusterConditionReady.WithLabelValues(key, value["Ready"].Reason, value["Ready"].Message).Set(1)
 		} else {
-			m.clusterConditionReady.WithLabelValues(key).Set(0)
+			m.clusterConditionReady.WithLabelValues(key, value["Ready"].Reason, value["Ready"].Message).Set(0)
 		}
 	}
 }

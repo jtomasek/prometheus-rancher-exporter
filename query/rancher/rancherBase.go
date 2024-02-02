@@ -82,6 +82,13 @@ type nodeInfo struct {
 	OSImage                 string
 }
 
+type Condition struct {
+	Type    string `json:"type"`
+	Status  bool   `json:"status"`
+	Reason  string `json:"reason"`
+	Message string `json:"message"`
+}
+
 func (r Client) GetInstalledRancherVersion() (string, error) {
 
 	res, err := r.Client.Resource(settingGVR).Get(context.Background(), "server-version", v1.GetOptions{})
@@ -455,8 +462,8 @@ func (r Client) GetDownstreamClustersInfo() ([]clusterInfo, error) {
 
 }
 
-func (r Client) GetClusterConditions() (map[string]map[string]bool, error) {
-	clusterConditions := make(map[string]map[string]bool)
+func (r Client) GetClusterConditions() (map[string]map[string]Condition, error) {
+	clusterConditions := make(map[string]map[string]Condition)
 
 	res, err := r.Client.Resource(clusterGVR).List(context.Background(), v1.ListOptions{})
 	if err != nil {
@@ -476,7 +483,7 @@ func (r Client) GetClusterConditions() (map[string]map[string]bool, error) {
 		// Ignore if it's the "Local" cluster
 		if clusterName != "local" {
 
-			clusterConditions[clusterName] = make(map[string]bool)
+			clusterConditions[clusterName] = make(map[string]Condition)
 
 			// Grab status.conditions slice from object
 			conditions, _, _ := unstructured.NestedSlice(cluster.Object, "status", "conditions")
@@ -484,13 +491,11 @@ func (r Client) GetClusterConditions() (map[string]map[string]bool, error) {
 			// Iterate through each status slice to determine if cluster is connected
 			for _, value := range conditions {
 
-				// Determine whether we find both conditions in each status Message
-				// We're looking for both when type == connected and status == true
-				// to identify if a cluster is connected to this Rancher instance
-
 				// Reset values when iterating through
 				foundStatus := false
 				foundType := ""
+
+				resultingCondition := Condition{}
 
 				for k, v := range value.(map[string]interface{}) {
 
@@ -535,7 +540,14 @@ func (r Client) GetClusterConditions() (map[string]map[string]bool, error) {
 					}
 
 					if foundType != "" {
-						clusterConditions[clusterName][foundType] = foundStatus
+						resultingCondition.Status = foundStatus
+						if k == "message" {
+							resultingCondition.Message = v.(string)
+						}
+						if k == "reason" {
+							resultingCondition.Reason = v.(string)
+						}
+						clusterConditions[clusterName][foundType] = resultingCondition
 					}
 
 				}
