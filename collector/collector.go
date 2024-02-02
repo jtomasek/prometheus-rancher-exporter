@@ -318,6 +318,7 @@ func Collect(client rancher.Client, Timer_GetLatestRancherVersion int, Timer_tic
 		go getNumberOfNodes(client, baseMetrics)
 		go getDownstreamClusterVersions(client, baseMetrics)
 		go getDownstreamClusterStates(client, baseMetrics)
+		go getClusterConditions(client, baseMetrics)
 		go getNumberOfTokens(client, baseMetrics)
 		go getNumberOfUsers(client, baseMetrics)
 		go getNumberOfProjects(client, baseMetrics)
