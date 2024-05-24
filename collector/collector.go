@@ -549,14 +549,16 @@ func getRestores(client rancher.Client, m rancherBackupMetrics) {
 
 func getDownstreamClusterStates(client rancher.Client, m rancherMetrics) {
 	rancherServerURL, err := client.GetRancherServerUrl()
-	downstreamClustersInfo, err := client.GetDownstreamClustersInfo()
+	if err != nil {
+		log.Errorf("error retrieving rancher server Url: %v", err)
+	}
 
+	downstreamClustersInfo, err := client.GetDownstreamClustersInfo()
 	if err != nil {
 		log.Errorf("error retrieving downstream k8s cluster info: %v", err)
 	}
 
 	for _, value := range downstreamClustersInfo {
-
 		m.downstreamClusterStatus.WithLabelValues(value.Name, value.DisplayName, value.Version, rancherServerURL).Set(1)
 	}
 }
@@ -566,31 +568,31 @@ func getClusterConditions(client rancher.Client, m rancherMetrics) {
 	if err != nil {
 		log.Errorf("error retrieving cluster connected states: %v", err)
 	}
+
 	for key, value := range clustersConditions {
+		m.clusterConditionPending.WithLabelValues(key).Set(0)
 		if value["Pending"].Status == true {
 			m.clusterConditionPending.WithLabelValues(key).Set(1)
-		} else {
-			m.clusterConditionPending.WithLabelValues(key).Set(0)
 		}
+
+		m.clusterConditionWaiting.WithLabelValues(key).Set(0)
 		if value["Waiting"].Status == true {
 			m.clusterConditionWaiting.WithLabelValues(key).Set(1)
-		} else {
-			m.clusterConditionWaiting.WithLabelValues(key).Set(0)
 		}
+
+		m.clusterConditionDiskPressure.WithLabelValues(key).Set(0)
 		if value["DiskPressure"].Status == true {
 			m.clusterConditionDiskPressure.WithLabelValues(key).Set(1)
-		} else {
-			m.clusterConditionDiskPressure.WithLabelValues(key).Set(0)
 		}
+
+		m.clusterConditionMemoryPressure.WithLabelValues(key).Set(0)
 		if value["MemoryPressure"].Status == true {
 			m.clusterConditionMemoryPressure.WithLabelValues(key).Set(1)
-		} else {
-			m.clusterConditionMemoryPressure.WithLabelValues(key).Set(0)
 		}
+
+		m.clusterConditionReady.WithLabelValues(key, value["Ready"].Reason, value["Ready"].Message).Set(0)
 		if value["Ready"].Status == true {
 			m.clusterConditionReady.WithLabelValues(key, value["Ready"].Reason, value["Ready"].Message).Set(1)
-		} else {
-			m.clusterConditionReady.WithLabelValues(key, value["Ready"].Reason, value["Ready"].Message).Set(0)
 		}
 	}
 }
