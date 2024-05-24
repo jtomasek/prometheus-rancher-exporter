@@ -437,25 +437,27 @@ func (r Client) GetDownstreamClustersInfo() ([]clusterInfo, error) {
 
 		// Grab Cluster Name
 		displayName, _, err := unstructured.NestedString(cluster.Object, "spec", "displayName")
-		name, _, err := unstructured.NestedString(cluster.Object, "metadata", "name")
-
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("getting cluster name from cluster object: %w", err)
+		}
+
+		name, _, err := unstructured.NestedString(cluster.Object, "metadata", "name")
+		if err != nil {
+			return nil, fmt.Errorf("getting cluster name from metadata: %w", err)
 		}
 
 		clusterK8sVersion, _, err := unstructured.NestedString(cluster.Object, "status", "version", "gitVersion")
-
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("getting kubernetes version from cluster object: %w", err)
 		}
 
-		clusterInfo := clusterInfo{
+		clusterInformation := clusterInfo{
 			Name:        name,
 			DisplayName: displayName,
 			Version:     clusterK8sVersion,
 		}
 
-		clusterInfos = append(clusterInfos, clusterInfo)
+		clusterInfos = append(clusterInfos, clusterInformation)
 	}
 
 	return clusterInfos, nil
@@ -467,7 +469,7 @@ func (r Client) GetClusterConditions() (map[string]map[string]Condition, error) 
 
 	res, err := r.Client.Resource(clusterGVR).List(context.Background(), v1.ListOptions{})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("getting cluster resources: %w", err)
 	}
 
 	// Iterate through each cluster management object
@@ -475,18 +477,19 @@ func (r Client) GetClusterConditions() (map[string]map[string]Condition, error) 
 
 		// Grab Cluster Name
 		clusterName, _, err := unstructured.NestedString(cluster.Object, "metadata", "name")
-
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("getting cluster name from cluster object: %w", err)
 		}
 
 		// Ignore if it's the "Local" cluster
 		if clusterName != "local" {
-
 			clusterConditions[clusterName] = make(map[string]Condition)
 
 			// Grab status.conditions slice from object
-			conditions, _, _ := unstructured.NestedSlice(cluster.Object, "status", "conditions")
+			conditions, _, err := unstructured.NestedSlice(cluster.Object, "status", "conditions")
+			if err != nil {
+				return nil, fmt.Errorf("getting cluster conditions from cluster object: %w", err)
+			}
 
 			// Iterate through each status slice to determine if cluster is connected
 			for _, value := range conditions {
@@ -511,32 +514,16 @@ func (r Client) GetClusterConditions() (map[string]map[string]Condition, error) 
 						foundType = "Waiting"
 					}
 
-					if k == "status" {
-						foundStatus = v.(string) == "True"
-					}
-
 					if k == "type" && v.(string) == "DiskPressure" {
 						foundType = "DiskPressure"
-					}
-
-					if k == "status" {
-						foundStatus = v.(string) == "True"
 					}
 
 					if k == "type" && v.(string) == "MemoryPressure" {
 						foundType = "MemoryPressure"
 					}
 
-					if k == "status" {
-						foundStatus = v.(string) == "True"
-					}
-
 					if k == "type" && v.(string) == "Ready" {
 						foundType = "Ready"
-					}
-
-					if k == "status" {
-						foundStatus = v.(string) == "True"
 					}
 
 					if foundType != "" {
