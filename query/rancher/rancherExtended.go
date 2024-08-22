@@ -39,6 +39,8 @@ func (r Client) GetRancherCustomResourceCount() (map[string]int, error) {
 				version, _, err := unstructured.NestedSlice(rancherCustomResource.Object, "status", "storedVersions")
 				if err != nil {
 					log.Errorf("error retrieving version of Rancher CRD: %v", err)
+					m.Unlock() // Ensure the lock is released before returning
+                    return      // Exit the goroutine early
 				}
 
 				result, err := r.Client.Resource(schema.GroupVersionResource{
@@ -49,6 +51,8 @@ func (r Client) GetRancherCustomResourceCount() (map[string]int, error) {
 
 				if err != nil {
 					log.Errorf("error retrieving count of Rancher CRD: %v,%s,%s,%s\n", err, group, version[0].(string), resource)
+					m.Unlock() // Ensure the lock is released before returning
+                    return      // Exit the goroutine early
 				}
 				rancherCustomResources[rancherCustomResource.GetName()] = len(result.Items)
 				m.Unlock()
